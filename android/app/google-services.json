@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "424779749983",
+    "project_id": "sep490-fa25se182",
+    "storage_bucket": "sep490-fa25se182.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:424779749983:android:eb09ea3e4e604a73d399ea",
+        "android_client_info": {
+          "package_name": "com.sep.sep490_mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "424779749983-7p53q7h45dbkqi7t8s6nlupt29rq5056.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD46pacJAau6aYZxDpcKnGjCrdveeIgQok"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "424779749983-7p53q7h45dbkqi7t8s6nlupt29rq5056.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
