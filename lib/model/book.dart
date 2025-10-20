@@ -1,3 +1,8 @@
+import 'package:meta/meta.dart';
+import 'genre.dart';
+import '../util/model.dart';
+
+@immutable
 class Book {
   final String bookId;
   final String bookName;
@@ -11,6 +16,7 @@ class Book {
   final DateTime? updatedAt;
   final DateTime? createdAt;
   final DateTime? publishedDate;
+  final List<Genre> genres;
 
   const Book({
     required this.bookId,
@@ -25,20 +31,48 @@ class Book {
     this.updatedAt,
     this.createdAt,
     this.publishedDate,
+    this.genres = const [],
   });
 
-  factory Book.fromJson(Map<String, dynamic> j) => Book(
-    bookId: j['bookId'] ?? '',
-    bookName: j['bookName'] ?? '',
-    authorId: j['authorId'],
-    coverUrl: j['coverUrl'] ?? '',
-    description: j['decription'] ?? j['description'],
-    progressStatus: j['progressStatus'],
-    publicationStatus: j['publicationStatus'],
-    bookshelveId: j['bookshelveId'],
-    isActived: j['isActived'] ?? 'ACTIVE',
-    updatedAt: j['updatedAt'] != null ? DateTime.tryParse(j['updatedAt']) : null,
-    createdAt: j['createdAt'] != null ? DateTime.tryParse(j['createdAt']) : null,
-    publishedDate: j['publishedDate'] != null ? DateTime.tryParse(j['publishedDate']) : null,
-  );
+  factory Book.fromJson(Map<String, dynamic> j) {
+    final g = ((j['genres'] as List?) ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(Genre.fromJson)
+        .toList();
+
+    int? _int(dynamic v) =>
+        v is int ? v : int.tryParse(v?.toString() ?? '');
+
+    return Book(
+      bookId           : (j['bookId'] ?? '').toString(),
+      bookName         : (j['bookName'] ?? '').toString(),
+      authorId         : j['authorId']?.toString(),
+      coverUrl         : (j['coverUrl'] ?? '').toString(),
+      description      : (j['decription'] ?? j['description'])?.toString(),
+      progressStatus   : _int(j['progressStatus']),
+      publicationStatus: _int(j['publicationStatus']),
+      bookshelveId     : j['bookshelveId']?.toString(),
+      isActived        : (j['isActived'] ?? 'ACTIVE').toString(),
+      updatedAt        : parseInstant(j['updatedAt']),
+      createdAt        : parseInstant(j['createdAt']),
+      publishedDate    : parseInstant(j['publishedDate']),
+      genres           : g,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'bookId'           : bookId,
+    'bookName'         : bookName,
+    'authorId'         : authorId,
+    'coverUrl'         : coverUrl,
+    'decription'       : description,
+    'progressStatus'   : progressStatus,
+    'publicationStatus': publicationStatus,
+    'bookshelveId'     : bookshelveId,
+    'isActived'        : isActived,
+    'updatedAt'        : updatedAt?.toIso8601String(),
+    'createdAt'        : createdAt?.toIso8601String(),
+    'publishedDate'    : publishedDate?.toIso8601String(),
+    'genres'           : genres.map((e) => e.toJson()).toList(),
+  };
 }

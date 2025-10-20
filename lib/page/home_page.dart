@@ -6,6 +6,7 @@ import '../widget/gs_image.dart';
 import '../provider.dart';
 import '../model/book.dart';
 import '../screen/new_book_screen.dart';
+import '../screen/nav_bottom_screen.dart';
 
 final booksProvider = FutureProvider<List<Book>>((ref) async {
   return ref.watch(bookRepoProvider).list(sort: '');
@@ -105,11 +106,7 @@ class HomePage extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async => ref.read(authRepoProvider).logout(),
-        icon: const Icon(Icons.logout),
-        label: const Text('Logout'),
-      ),
+      bottomNavigationBar: const NavBottomBar(currentIndex: 0),
     );
   }
 
