@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../core/api_client.dart';
 import '../core/secure_store.dart';
 import '../model/user.dart';
@@ -8,38 +9,110 @@ class AuthRepository {
   final SecureStore _store;
   AuthRepository(this._dio, this._store);
 
-  /// Đăng nhập demo: POST /auth/login {email, password}
+  /// LOCAL LOGIN -> POST /api/rookie/users/auth/login
   Future<User> login({required String email, required String password}) async {
     try {
-      final res = await _dio.post('/auth/login', data: {
-        'email': email,
-        'password': password,
-      });
-      // server nên trả { accessToken, refreshToken, user:{...} }
-      final data = res.data as Map<String, dynamic>;
-      await _store.writeTokens(
-        access: data['accessToken'] ?? '',
-        refresh: data['refreshToken'],
+      final res = await _dio.post(
+        '/api/rookie/users/auth/login',
+        data: {'email': email, 'password': password},
       );
-      return User.fromJson(data['user'] ?? {});
+
+      final data = (res.data as Map).cast<String, dynamic>();
+
+      // Backend trả về { user: {...}, jwt: '...' }
+      final userJson = (data['user'] ?? data).cast<String, dynamic>();
+      final token = (data['jwt'] ??
+          data['token'] ??
+          data['accessToken'] ??
+          '').toString();
+
+      // Lưu token
+      await _store.writeTokens(access: token, refresh: data['refreshToken']);
+
+      return User.fromJson(userJson);
     } on DioException catch (e) {
-      mapDioError(e);
+      final serverMsg = e.response?.data is Map
+          ? (e.response!.data['message']?.toString() ??
+          e.response!.data['error']?.toString())
+          : null;
+      throw Exception(serverMsg ?? e.message ?? 'Đăng nhập thất bại');
     }
   }
 
-  Future<User> me() async {
+  /// LOGOUT -> POST /api/rookie/users/auth/logout
+  Future<int?> logout() async {
+    String? access = await _store.readAccessToken();
+    int? ttlSeconds;
+
     try {
-      final res = await _dio.get('/auth/me');
-      return User.fromJson(res.data);
+      if (access != null && access.isNotEmpty) {
+        debugPrint('[AuthRepository] Logout with Bearer token...');
+
+        final res = await _dio.post(
+          '/api/rookie/users/auth/logout',
+          options: Options(headers: {'Authorization': 'Bearer $access'}),
+        );
+
+        final data = (res.data is Map) ? (res.data as Map).cast<String, dynamic>() : <String, dynamic>{};
+        ttlSeconds = (data['token_invalid_in_seconds'] as num?)?.toInt();
+
+        debugPrint('[AuthRepository] Logout OK. token_invalid_in_seconds=$ttlSeconds');
+        debugPrint('[AuthRepository] login ok userId');
+        debugPrint('[AuthRepository] logout called');
+      } else {
+        debugPrint('[AuthRepository] Logout without token (no access token found).');
+      }
     } on DioException catch (e) {
-      mapDioError(e);
+      debugPrint('[AuthRepository] Logout ERROR: '
+          'status=${e.response?.statusCode} '
+          'url=${e.requestOptions.uri} '
+          'body=${e.response?.data}');
+    } finally {
+      await _store.clear();
+    }
+
+    return ttlSeconds;
+  }
+
+  /// REGISTER -> POST /api/rookie/users/auth/register
+  Future<User> register({
+    required String fullName,
+    required String email,
+    String? phoneNumber,
+    required String password,
+    String? roleId,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'fullName': fullName.trim(),
+        'email': email.trim(),
+        'phoneNumber': phoneNumber?.trim(),
+        'password': password,
+      };
+
+      if (roleId != null && roleId.trim().isNotEmpty) {
+        body['roleId'] = roleId.trim();
+      }
+
+      final res = await _dio.post('/api/rookie/users/auth/register', data: body);
+      final data = (res.data as Map).cast<String, dynamic>();
+
+      // Backend trả về { user: {...}, jwt: '...' }
+      final userJson = (data['user'] ?? data).cast<String, dynamic>();
+      final token = (data['jwt'] ?? data['token'] ?? data['accessToken'] ?? '').toString();
+
+      if (token.isNotEmpty) {
+        // Không muốn auto-login
+        await _store.writeTokens(access: token, refresh: data['refreshToken']);
+      }
+
+      return User.fromJson(userJson);
+    } on DioException catch (e) {
+      final serverMsg = e.response?.data is Map
+          ? (e.response!.data['message']?.toString() ?? e.response!.data['error']?.toString())
+          : null;
+      throw Exception(serverMsg ?? e.message ?? 'Đăng ký thất bại');
     }
   }
 
-  Future<void> logout() async {
-    try {
-      await _dio.post('/auth/logout');
-    } catch (_) {}
-    await _store.clear();
-  }
 }
