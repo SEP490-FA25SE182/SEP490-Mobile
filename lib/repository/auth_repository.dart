@@ -115,4 +115,20 @@ class AuthRepository {
     }
   }
 
+  /// FORGOT PASSWORD -> POST /api/rookie/users/auth/password/forgot
+  Future<void> forgotPassword(String email) async {
+    try {
+      await _dio.post(
+        '/api/rookie/users/auth/password/forgot',
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      final serverMsg = e.response?.data is Map
+          ? (e.response!.data['message']?.toString() ??
+          e.response!.data['error']?.toString())
+          : null;
+      throw Exception(serverMsg ?? e.message ?? 'Không thể gửi yêu cầu đặt lại mật khẩu');
+    }
+  }
+
 }
