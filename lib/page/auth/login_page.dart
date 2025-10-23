@@ -172,7 +172,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: GestureDetector(
-                          onTap: () => context.push('/forgot-password'),
+                          onTap: () => context.go('/forgot_password'),
                           child: const Text('Bạn quên mật khẩu của mình?', style: TextStyle(color: Colors.white70)),
                         ),
                       ),
