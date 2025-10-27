@@ -131,4 +131,27 @@ class AuthRepository {
     }
   }
 
+  /// GOOGLE LOGIN -> POST /api/rookie/users/auth/google
+  Future<User> loginWithGoogle(String idToken) async {
+    try {
+      final res = await _dio.post(
+        '/api/rookie/users/auth/google',
+        data: {'idToken': idToken},
+      );
+
+      final data = (res.data as Map).cast<String, dynamic>();
+      final userJson = (data['user'] ?? data).cast<String, dynamic>();
+      final token = (data['jwt'] ?? data['token'] ?? data['accessToken'] ?? '').toString();
+
+      await _store.writeTokens(access: token, refresh: data['refreshToken']);
+      return User.fromJson(userJson);
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map
+          ? (e.response!.data['message']?.toString() ??
+          e.response!.data['error']?.toString())
+          : null;
+      throw Exception(msg ?? e.message ?? 'Đăng nhập Google thất bại');
+    }
+  }
+
 }
