@@ -6,10 +6,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:go_router/go_router.dart';
 
-import '../widget/gs_image.dart';
-import '../provider.dart';
-import '../model/user.dart';
-import '../style/input_text.dart';
+import '../../widget/gs_image.dart';
+import '../../provider.dart';
+import '../../model/user.dart';
+import '../../screen/user_address_screen.dart';
+
 
 class EditProfilePage extends ConsumerStatefulWidget {
   final User? user;
@@ -110,7 +111,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   Future<void> _editGender() async {
-    final options = ['Nam', 'Nữ', 'Khác'];
+    final options = ['Male', 'Female', 'Orther'];
     final cur = _genderCtrl.text.trim();
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -296,6 +297,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 value: _email ?? '—',
                 enabled: false,
               ),
+
+              const SizedBox(height: 18),
+
+              // Phần Sổ địa chỉ
+              if (_userId != null && _userId!.isNotEmpty)
+                UserAddressSection(userId: _userId!),
             ],
           ),
         ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../provider.dart';
 import '../../style/button.dart';
@@ -40,6 +42,50 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       setState(() { _error = e.toString(); });
     } finally {
       if (mounted) setState(() { _loading = false; });
+    }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      // 1) Google Sign-In
+      debugPrint('[Google] Start signIn');
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) { // user hủy
+        debugPrint('[Google] Cancelled');
+        setState(() => _loading = false);
+        return;
+      }
+      final googleAuth = await googleUser.authentication;
+      debugPrint('[Google] got tokens: at=${googleAuth.accessToken != null}, id=${googleAuth.idToken != null}');
+
+      // 2) Đăng nhập Firebase bằng Google credential
+      final cred = fb.GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final userCred = await fb.FirebaseAuth.instance.signInWithCredential(cred);
+
+      // 3) Lấy Firebase ID token
+      final idToken = await userCred.user?.getIdToken();
+      debugPrint('[Google] Firebase signIn OK, idToken len=${idToken?.length}');
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception('Không lấy được Firebase ID token');
+      }
+
+      // 4) Gọi backend /auth/google
+      final u = await ref.read(authRepoProvider).loginWithGoogle(idToken);
+
+      // (tuỳ bạn) nhớ set currentUserId để Profile đọc lại:
+      ref.read(currentUserIdProvider.notifier).state = u.userId;
+
+      if (!mounted) return;
+      context.go('/profile');
+    } catch (e, st) {
+      debugPrint('[Google] ERROR: $e\n$st');
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -103,7 +149,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 width: 18, height: 18,
                                 child: GsImage(url: gIcon, fit: BoxFit.contain),
                               ),
-                              onTap: () {/* TODO: Google Sign-In */},
+                              onTap: _loading ? null : _loginWithGoogle,
                             ),
                           ),
                           const SizedBox(width: 12),
