@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:sep490_mobile/repository/address_repository.dart';
+import 'package:sep490_mobile/repository/blog_repository.dart';
 import 'package:sep490_mobile/repository/vn_location_repository.dart';
 import 'core/config.dart';
 import 'core/api_client.dart';
 import 'core/secure_store.dart';
+import 'model/blog.dart';
 import 'model/user_address.dart';
 import 'model/vn_location.dart';
 import 'repository/auth_repository.dart';
@@ -74,7 +76,6 @@ FutureProvider.family<List<UserAddress>, String>((ref, userId) async {
   return list;
 });
 
-
 // Invalidate cache address (sau khi thêm/sửa/xoá/đặt mặc định)
 void invalidateAddressesCache(WidgetRef ref, String userId) {
   ref.invalidate(addressesByUserProvider(userId));
@@ -87,3 +88,9 @@ final vnLocationRepoProvider = Provider<VnLocationRepository>(
 final vnLocationsProvider = FutureProvider<List<VnProvince>>((ref) {
   return ref.read(vnLocationRepoProvider).fetchAll();
 });
+
+///BlogRepository
+final blogRepoProvider = Provider<BlogRepository>((ref) => BlogRepository(ref.read(dioProvider)));
+
+final blogByIdProvider =
+FutureProvider.family<Blog, String>((ref, id) => ref.read(blogRepoProvider).getById(id));
