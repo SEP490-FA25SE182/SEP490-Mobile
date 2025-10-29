@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../style/button.dart';
 import '../widget/gs_image.dart';
 
 /// Khu vực **dành cho khách (chưa đăng nhập)** ở trang hồ sơ.
@@ -31,6 +33,20 @@ class GuestProfileSection extends StatelessWidget {
                   aspectRatio: 16 / 9,
                   child: GsImage(url: _bannerGs, fit: BoxFit.cover),
                 ),
+              ),
+              const SizedBox(height: 16),
+
+              // Nút Scan
+              ButtonSoft(
+                text: 'Scan',
+                onTap: () async {
+                  final result = await context.push<String>('/scan'); 
+                  if (result != null && result.isNotEmpty && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Đã quét: $result')),
+                    );
+                  }
+                },
               ),
             ],
           ),

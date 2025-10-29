@@ -41,7 +41,7 @@ class HomePage extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF0E2A47), Color(0xFF09121F)], // xanh → đen
+            colors: [Color(0xFF0E2A47), Color(0xFF09121F)],
           ),
         ),
         child: SafeArea(
