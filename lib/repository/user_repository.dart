@@ -44,4 +44,15 @@ class UserRepository {
       mapDioError(e);
     }
   }
+
+
+  Future<User?> getUserById(String id) async {
+    try {
+      final res = await _dio.get('/api/rookie/users/$id');
+      return User.fromJson(res.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      mapDioError(e);
+      return null;
+    }
+  }
 }

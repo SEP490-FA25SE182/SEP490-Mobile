@@ -7,6 +7,8 @@ class Book {
   final String bookId;
   final String bookName;
   final String? authorId;
+  final double? price;
+  final int? quantity;
   final String coverUrl;
   final String? description;
   final int? progressStatus;
@@ -23,6 +25,8 @@ class Book {
     required this.bookName,
     required this.coverUrl,
     this.authorId,
+    this.price,
+    this.quantity,
     this.description,
     this.progressStatus,
     this.publicationStatus,
@@ -43,10 +47,18 @@ class Book {
     int? _int(dynamic v) =>
         v is int ? v : int.tryParse(v?.toString() ?? '');
 
+    double? _double(dynamic v) {
+      if (v == null) return null;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString());
+    }
+
     return Book(
       bookId           : (j['bookId'] ?? '').toString(),
       bookName         : (j['bookName'] ?? '').toString(),
       authorId         : j['authorId']?.toString(),
+      price            : _double(j['price']),
+      quantity         : _int(j['quantity']),
       coverUrl         : (j['coverUrl'] ?? '').toString(),
       description      : (j['decription'] ?? j['description'])?.toString(),
       progressStatus   : _int(j['progressStatus']),
@@ -64,6 +76,8 @@ class Book {
     'bookId'           : bookId,
     'bookName'         : bookName,
     'authorId'         : authorId,
+    'price'            : price,
+    'quantity'         : quantity,
     'coverUrl'         : coverUrl,
     'decription'       : description,
     'progressStatus'   : progressStatus,

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../widget/gs_image.dart';
 import '../provider.dart';
@@ -12,12 +13,16 @@ final booksProvider = FutureProvider<List<Book>>((ref) async {
   return ref.watch(bookRepoProvider).list(sort: '');
 });
 
+final newestBooksProvider = FutureProvider<List<Book>>((ref) async {
+  return ref.watch(bookRepoProvider).newestBooks(limit: 5);
+});
+
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final books = ref.watch(booksProvider);
+    final books = ref.watch(newestBooksProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -43,8 +48,13 @@ class HomePage extends ConsumerWidget {
           top: false,
           child: books.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) =>
-                Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white))),
+            error:
+                (e, _) => Center(
+                  child: Text(
+                    'Error: $e',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
             data: (list) {
               // Banner tĩnh trong Storage
               const bannerGs =
@@ -55,7 +65,11 @@ class HomePage extends ConsumerWidget {
                 children: [
                   const Text(
                     'Khám phá',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   const Divider(color: Colors.white24, height: 1),
@@ -71,18 +85,29 @@ class HomePage extends ConsumerWidget {
                         height: 110,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
-                          itemCount: min(10, list.length),
-                          separatorBuilder: (_, __) => const SizedBox(width: spacing),
-                          itemBuilder: (_, i) => SizedBox(
-                            width: itemWidth,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: AspectRatio(
-                                aspectRatio: 9 / 14,
-                                child: GsImage(url: list[i].coverUrl, fit: BoxFit.cover),
+                          itemCount: min(5, list.length),
+                          separatorBuilder: (_, __) =>
+                          const SizedBox(width: spacing),
+                          itemBuilder: (_, i) {
+                            final book = list[i];
+                            return GestureDetector(
+                              onTap: () {
+                                //Navigate to detail
+                                context.push('/books/${book.bookId}');
+                              },
+                              child: SizedBox(
+                                width: itemWidth,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: AspectRatio(
+                                    aspectRatio: 9 / 14,
+                                    child: GsImage(
+                                        url: book.coverUrl, fit: BoxFit.cover),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       );
                     },
