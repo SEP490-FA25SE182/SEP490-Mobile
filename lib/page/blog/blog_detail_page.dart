@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../provider.dart';
 import '../../model/blog.dart';
+import '../../screen/nav_bottom_screen.dart';
 import '../../widget/gs_image.dart';
 
 class BlogDetailPage extends ConsumerWidget {
@@ -31,6 +32,7 @@ class BlogDetailPage extends ConsumerWidget {
           data: (blog) => _DetailBody(blog: blog),
         ),
       ),
+      bottomNavigationBar: const NavBottomBar(currentIndex: 0),
     );
   }
 }
@@ -135,39 +137,17 @@ class _DetailBody extends ConsumerWidget {
           ),
         ),
 
-        SliverToBoxAdapter(
-          child: (blog.images.isEmpty)
-              ? const SizedBox.shrink()
-              : Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-            child: Column(
-              children: blog.images
-                  .where((e) => e.imageUrl.isNotEmpty && e.position != 0)
-                  .map((e) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: AspectRatio(
-                    aspectRatio: 16/9,
-                    child: GsImage(url: e.imageUrl, fit: BoxFit.cover),
-                  ),
-                ),
-              ))
-                  .toList(),
-            ),
-          ),
-        ),
-
         // Tags (#tag)
         SliverToBoxAdapter(
-          child: (blog.tags.isEmpty)
+          child: (blog.tagNames.isEmpty)
               ? const SizedBox(height: 18)
               : Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+            padding: const EdgeInsets.fromLTRB(16, 30, 16, 24),
             child: Wrap(
-              spacing: 8, runSpacing: 8,
-              children: blog.tags.map((t) {
-                final label = t.name?.trim() ?? '';
+              spacing: 8,
+              runSpacing: 8,
+              children: blog.tagNames.map((t) {
+                final label = t.trim();
                 if (label.isEmpty) return const SizedBox.shrink();
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -176,10 +156,7 @@ class _DetailBody extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.white24, width: .8),
                   ),
-                  child: Text(
-                    '#$label',
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                  child: Text('#$label', style: const TextStyle(color: Colors.white)),
                 );
               }).toList(),
             ),
