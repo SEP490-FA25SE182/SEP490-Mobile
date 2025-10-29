@@ -1,6 +1,4 @@
 import 'package:meta/meta.dart';
-import 'blog_image.dart';
-import 'tag.dart';
 
 @immutable
 class Blog {
@@ -13,11 +11,10 @@ class Blog {
   final String? bookId;
   final String isActived;
 
-  /// NEW: url ảnh cover (lấy trực tiếp từ BE)
+  /// BE mới:
   final String? coverUrl;
-
-  final List<BlogImage> images;
-  final List<Tag> tags;
+  final List<String> tagIds;
+  final List<String> tagNames;
 
   const Blog({
     required this.blogId,
@@ -29,39 +26,25 @@ class Blog {
     this.bookId,
     this.isActived = 'ACTIVE',
     this.coverUrl,
-    this.images = const [],
-    this.tags = const [],
+    this.tagIds = const [],
+    this.tagNames = const [],
   });
 
-  /// URL ảnh cover ưu tiên:
-  /// 1) `coverUrl` từ BE
-  /// 2) Ảnh `position == 0`
-  /// 3) Ảnh đầu tiên (nếu có)
-  String? get coverImageUrl {
-    if ((coverUrl ?? '').trim().isNotEmpty) return coverUrl;
-    if (images.isEmpty) return null;
-    final sorted = [...images]..sort((a, b) => a.position.compareTo(b.position));
-    final zero = sorted.where((e) => e.position == 0).toList();
-    return (zero.isNotEmpty ? zero.first.imageUrl : sorted.first.imageUrl);
-  }
+  /// Dùng cho UI
+  String? get coverImageUrl =>
+      (coverUrl != null && coverUrl!.trim().isNotEmpty) ? coverUrl : null;
 
   factory Blog.fromJson(Map<String, dynamic> j) => Blog(
-    blogId: (j['blogId'] ?? '').toString(),
-    title: (j['title'] ?? '').toString(),
-    content: j['content']?.toString(),
-    createdAt: j['createdAt'] != null ? DateTime.tryParse(j['createdAt'].toString()) : null,
-    updatedAt: j['updatedAt'] != null ? DateTime.tryParse(j['updatedAt'].toString()) : null,
-    authorId: j['authorId']?.toString(),
-    bookId: j['bookId']?.toString(),
+    blogId   : (j['blogId'] ?? '').toString(),
+    title    : (j['title'] ?? '').toString(),
+    content  : j['content']?.toString(),
+    createdAt: j['createdAt'] != null ? DateTime.tryParse('${j['createdAt']}') : null,
+    updatedAt: j['updatedAt'] != null ? DateTime.tryParse('${j['updatedAt']}') : null,
+    authorId : j['authorId']?.toString(),
+    bookId   : j['bookId']?.toString(),
     isActived: (j['isActived'] ?? '').toString(),
-    coverUrl: j['coverUrl']?.toString(),
-    images: (j['images'] as List? ?? const [])
-        .whereType<Map>()
-        .map((e) => BlogImage.fromJson(e.cast<String, dynamic>()))
-        .toList(),
-    tags: (j['tags'] as List? ?? const [])
-        .whereType<Map>()
-        .map((e) => Tag.fromJson(e.cast<String, dynamic>()))
-        .toList(),
+    coverUrl : j['coverUrl']?.toString(),
+    tagIds   : (j['tagIds']   as List? ?? const []).map((e) => '$e').toList(),
+    tagNames : (j['tagNames'] as List? ?? const []).map((e) => '$e').toList(),
   );
 }
