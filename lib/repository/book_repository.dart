@@ -9,16 +9,22 @@ class BookRepository {
   Future<List<Book>> list({
     int page = 0,
     int size = 20,
-    String sort = '',
+    String sort = 'createdAt-desc',
+    String? search,
+    String? genreId,
   }) async {
     try {
+      final query = {
+        'page': page,
+        'size': size,
+        'sort': sort,
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (genreId != null && genreId.isNotEmpty) 'genreId': genreId,
+      };
+
       final res = await _dio.get(
         '/api/rookie/users/books',
-        queryParameters: {
-          'page': page,
-          'size': size,
-          'sort': sort,
-        },
+        queryParameters: query,
       );
 
       final data = res.data;
@@ -34,8 +40,10 @@ class BookRepository {
       return const <Book>[];
     } on DioException catch (e) {
       mapDioError(e);
+      rethrow;
     }
   }
+
 
 
   Future<List<Book>> newestBooks({int limit = 5}) async {
