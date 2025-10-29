@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sep490_mobile/page/blog/blog_detail_page.dart';
+import 'package:sep490_mobile/page/book/book_detail_page.dart';
 import 'package:sep490_mobile/page/profile/edit_address_page.dart';
 import 'package:sep490_mobile/page/scan_page.dart';
 import 'provider.dart';
@@ -15,6 +16,7 @@ import 'page/auth/login_page.dart';
 import 'page/auth/register_page.dart';
 import 'page/profile/edit_profile_page.dart';
 import 'page/auth/forgot_password_page.dart';
+import 'page/book_list_page.dart';
 import 'page/profile/edit_address_page.dart' show EditAddressArgs, EditAddressPage;
 import 'page/profile/create_address_page.dart';
 
@@ -27,6 +29,7 @@ class MyApp extends StatelessWidget {
       initialLocation: '/',
       routes: [
         GoRoute(path: '/',        name: 'home',    builder: (_, __) => const HomePage()),
+        GoRoute(path: '/booklist', name: 'booklist', builder: (_, __) => const BookListPage()),
         GoRoute(path: '/blogs',   name: 'blogs',   builder: (_, __) => const BlogPage()),
         //GoRoute(path: '/library', name: 'library', builder: (_, __) => const LibraryPage()),
         //GoRoute(path: '/cart',    name: 'cart',    builder: (_, __) => const CartPage()),
@@ -35,6 +38,14 @@ class MyApp extends StatelessWidget {
         GoRoute(path: '/account/edit', builder: (_, __) => const EditProfilePage()),
         GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
         GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
+        GoRoute(
+          path: '/books/:id',
+          name: 'book_detail',
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return BookDetailPage(bookId: id);
+          },
+        ),
         GoRoute(path: '/profile', name: 'profile', builder: (context, state) => const _ProfileLoader(),),
         GoRoute(path: '/address/edit', builder: (_, state) => EditAddressPage(args: state.extra as EditAddressArgs),),
         GoRoute(path: '/address/create', builder: (_, __) => const CreateAddressPage(),),
