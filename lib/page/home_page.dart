@@ -30,7 +30,13 @@ class HomePage extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          _circleIcon(Icons.search),
+          GestureDetector(
+            onTap: () {
+              //Navigate to BookList page when search clicked
+              context.push('/booklist');
+            },
+            child: _circleIcon(Icons.search),
+          ),
           const SizedBox(width: 8),
           _circleIcon(Icons.notifications_none),
           const SizedBox(width: 12),
@@ -48,34 +54,52 @@ class HomePage extends ConsumerWidget {
           top: false,
           child: books.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error:
-                (e, _) => Center(
-                  child: Text(
-                    'Error: $e',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
+            error: (e, _) => Center(
+              child: Text(
+                'Error: $e',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
             data: (list) {
-              // Banner tĩnh trong Storage
               const bannerGs =
                   'gs://sep490-fa25se182.firebasestorage.app/banner/banner.png';
 
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 children: [
-                  const Text(
-                    'Khám phá',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
+                  /// --- HEADER: KHÁM PHÁ + XEM TẤT CẢ ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Khám phá',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          //Navigate to BookList page
+                          context.push('/booklist');
+                        },
+                        child: const Text(
+                          'Xem tất cả',
+                          style: TextStyle(
+                            color: Color(0xFF5B6CF3),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   const Divider(color: Colors.white24, height: 1),
                   const SizedBox(height: 16),
 
-                  // Dải cover nhỏ
+                  // --- DẢI COVER NHỎ ---
                   LayoutBuilder(
                     builder: (context, constraints) {
                       const spacing = 12.0;
@@ -92,7 +116,7 @@ class HomePage extends ConsumerWidget {
                             final book = list[i];
                             return GestureDetector(
                               onTap: () {
-                                //Navigate to detail
+                                //Navigate to book detail
                                 context.push('/books/${book.bookId}');
                               },
                               child: SizedBox(
@@ -102,7 +126,9 @@ class HomePage extends ConsumerWidget {
                                   child: AspectRatio(
                                     aspectRatio: 9 / 14,
                                     child: GsImage(
-                                        url: book.coverUrl, fit: BoxFit.cover),
+                                      url: book.coverUrl,
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -114,7 +140,7 @@ class HomePage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // Banner lớn
+                  // --- BANNER LỚN ---
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: AspectRatio(
@@ -135,6 +161,7 @@ class HomePage extends ConsumerWidget {
     );
   }
 
+  /// --- Helper widget for rounded icon buttons ---
   static Widget _circleIcon(IconData icon) {
     return Container(
       width: 38,
