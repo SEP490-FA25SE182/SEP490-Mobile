@@ -13,6 +13,7 @@ class NavBottomBar extends ConsumerWidget {
 
   static final List<({String label, String icon, String route})> _items = [
     (label: 'Trang chủ', icon: '$_iconBase/home.png',    route: '/'),
+    //(label: 'Danh sách', icon: '$_iconBase/list.png',    route: '/booklist'),
     (label: 'Blogs',     icon: '$_iconBase/blog.png',    route: '/blogs'),
     (label: 'Thư viện',  icon: '$_iconBase/library.png', route: '/library'),
     (label: 'Giỏ hàng',  icon: '$_iconBase/cart.png',    route: '/cart'),

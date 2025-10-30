@@ -2,11 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:sep490_mobile/repository/address_repository.dart';
 import 'package:sep490_mobile/repository/blog_repository.dart';
+import 'package:sep490_mobile/repository/genre_repository.dart';
 import 'package:sep490_mobile/repository/vn_location_repository.dart';
 import 'core/config.dart';
 import 'core/api_client.dart';
 import 'core/secure_store.dart';
 import 'model/blog.dart';
+import 'model/genre.dart';
 import 'model/user_address.dart';
 import 'model/vn_location.dart';
 import 'repository/auth_repository.dart';
@@ -94,3 +96,14 @@ final blogRepoProvider = Provider<BlogRepository>((ref) => BlogRepository(ref.re
 
 final blogByIdProvider =
 FutureProvider.family<Blog, String>((ref, id) => ref.read(blogRepoProvider).getById(id));
+
+
+final genreRepoProvider = Provider<GenreRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+  return GenreRepository(dio);
+});
+
+final genresProvider = FutureProvider<List<Genre>>((ref) async {
+  final repo = ref.watch(genreRepoProvider);
+  return repo.list();
+});
