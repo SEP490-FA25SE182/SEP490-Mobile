@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../model/book.dart';
+import '../../model/cart.dart';
+import '../../model/cart_item.dart';
 import '../../provider.dart';
 import '../../widget/gs_image.dart';
 
@@ -207,14 +209,62 @@ class BookDetailPage extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          // TODO: Gọi API thêm vào giỏ hàng
+                        onPressed: () async {
+                          final userId = ref.read(currentUserIdProvider);
+                          if (userId == null || userId.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Vui lòng đăng nhập để thêm vào giỏ hàng')),
+                            );
+                            return;
+                          }
+
+                          try {
+                            // 1) Lấy/ tạo Cart ACTIVE
+                            final cartRepo = ref.read(cartRepoProvider);
+                            final cartItemRepo = ref.read(cartItemRepoProvider);
+
+                            Cart? cart = await cartRepo.getByUserId(userId);
+                            cart ??= await cartRepo.createOne(userId: userId);
+
+                            // 2) Kiểm tra item đã tồn tại chưa
+                            final items = await cartItemRepo.listByCart(cart.cartId);
+                            CartItem? existed;
+                            try {
+                              existed = items.firstWhere((it) => it.bookId == book.bookId);
+                            } catch (_) {
+                              existed = null;
+                            }
+
+                            if (existed != null) {
+                              await cartItemRepo.update(existed.cartItemId, quantity: existed.quantity + 1);
+                            } else {
+                              // Tạo mới
+                              final double price =
+                              ((book.price ?? book.price) ?? 0).toDouble();
+                              await cartItemRepo.create(
+                                cartId: cart.cartId,
+                                bookId: book.bookId,
+                                quantity: 1,
+                                price: price,
+                              );
+                            }
+
+                            ref.invalidate(cartByUserProvider(userId));
+                            ref.invalidate(cartItemsByCartProvider(cart.cartId));
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('✔️ Đã thêm vào giỏ hàng')),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('✖️ Không thể thêm vào giỏ hàng: $e')),
+                            );
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF5B6CF3),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         icon: const Icon(Icons.shopping_cart_outlined),
                         label: const Text(
@@ -232,8 +282,7 @@ class BookDetailPage extends ConsumerWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2ECC71),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         icon: const Icon(Icons.flash_on_outlined),
                         label: const Text(

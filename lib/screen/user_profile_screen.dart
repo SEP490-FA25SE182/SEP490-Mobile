@@ -93,8 +93,13 @@ class UserProfileSection extends ConsumerWidget {
               ),
               _OptionTile(
                 iconUrl: '$_gsIconBase/wallet.png',
-                title: 'Ví của bạn',
-                routeName: '/wallet',
+                title: 'Ví tiền của bạn',
+                routeName: '/wallet/money',
+              ),
+              _OptionTile(
+                iconUrl: '$_gsIconBase/coin-bag.png',
+                title: 'Túi xu của bạn',
+                routeName: '/wallet/coin',
               ),
             ],
           ),
