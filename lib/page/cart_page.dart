@@ -1,3 +1,4 @@
+// lib/page/cart_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,7 +6,11 @@ import 'package:go_router/go_router.dart';
 import '../provider.dart';
 import '../model/cart_item.dart';
 import '../widget/gs_image.dart';
-import '../model/book.dart';
+import 'dart:math' as math;
+import '../page/order/checkout_page.dart' show CheckoutArgs;
+
+
+const _iconCoin = 'gs://sep490-fa25se182.firebasestorage.app/icon/coin.png';
 
 class CartPage extends ConsumerStatefulWidget {
   const CartPage({super.key});
@@ -18,6 +23,10 @@ class _CartPageState extends ConsumerState<CartPage> {
   bool _editMode = false;
   final Set<String> _checked = <String>{};
   bool _selectAll = false;
+  bool _creatingOrder = false;
+
+  // dùng xu
+  bool _useCoin = false;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +59,7 @@ class _CartPageState extends ConsumerState<CartPage> {
     }
 
     final cartAsync = ref.watch(cartByUserProvider(uid));
+    final walletAsync = ref.watch(walletByUserProvider(uid)); // ví (xu)
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -57,9 +67,7 @@ class _CartPageState extends ConsumerState<CartPage> {
         backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            context.go('/');
-          },
+          onPressed: () => context.go('/'),
         ),
         title: const Text('Giỏ hàng'),
         actions: [
@@ -81,7 +89,9 @@ class _CartPageState extends ConsumerState<CartPage> {
         ),
         child: cartAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Lỗi tải giỏ hàng: $e', style: const TextStyle(color: Colors.redAccent))),
+          error: (e, _) => Center(
+            child: Text('Lỗi tải giỏ hàng: $e', style: const TextStyle(color: Colors.redAccent)),
+          ),
           data: (cart) {
             if (cart == null) {
               return const Center(
@@ -95,16 +105,24 @@ class _CartPageState extends ConsumerState<CartPage> {
             return itemsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
-                child: Text('Lỗi tải sản phẩm: $e',
-                    style: const TextStyle(color: Colors.redAccent)),
+                child: Text('Lỗi tải sản phẩm: $e', style: const TextStyle(color: Colors.redAccent)),
               ),
               data: (items) {
                 final allIds = items.map((e) => e.cartItemId).toSet();
                 _selectAll = _checked.length == allIds.length && allIds.isNotEmpty;
 
-                final total = items
+                // subtotal (tổng tiền dựa trên mục đã tick)
+                final subtotal = items
                     .where((i) => _checked.contains(i.cartItemId))
                     .fold<double>(0.0, (sum, i) => sum + i.price * i.quantity);
+
+                // coins khả dụng
+                final coins = walletAsync.maybeWhen(data: (w) => w?.coin ?? 0, orElse: () => 0);
+                final canUseCoins = math.min(coins, (subtotal * 0.10).floor()); // xu tối đa dùng
+                // double
+                final discount = _useCoin ? canUseCoins.toDouble() : 0.0;
+
+                final total = math.max(0.0, subtotal - discount);
 
                 return Column(
                   children: [
@@ -135,6 +153,46 @@ class _CartPageState extends ConsumerState<CartPage> {
                       ),
                     ),
 
+                    // ==== Row "Dùng xu" ====
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft, end: Alignment.centerRight,
+                          colors: [Color(0xFF6A78FF), Color(0xFF7E50B5)],
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const GsImage(url: _iconCoin, width: 20, height: 20, fit: BoxFit.contain),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: walletAsync.when(
+                              loading: () => const Text('Đang tải xu...', style: TextStyle(color: Colors.white70)),
+                              error: (e, _) => Text('Lỗi xu: $e', style: const TextStyle(color: Colors.redAccent)),
+                              data: (w) {
+                                final coins = w?.coin ?? 0;
+                                final canUseCoins = math.min(coins, (subtotal * 0.10).floor());
+                                final text = _useCoin
+                                    ? 'Dùng ${_fmtNumber(canUseCoins)}  xu'
+                                    : 'Đang có ${_fmtNumber(coins)}  xu';
+                                return Text(
+                                  text,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                                );
+                              },
+                            ),
+                          ),
+                          Switch(
+                            value: _useCoin,
+                            activeColor: const Color(0xFF2ED47A),
+                            onChanged: (v) => setState(() => _useCoin = v),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // ==== Bottom bar: chọn tất cả + tổng + MUA HÀNG ====
                     _CartBottomBar(
                       selectAll: _selectAll,
                       onToggleAll: (val) {
@@ -144,20 +202,16 @@ class _CartPageState extends ConsumerState<CartPage> {
                           if (_selectAll) _checked.addAll(allIds);
                         });
                       },
+                      subtotal: subtotal,
+                      discount: discount,
                       total: total,
                       editMode: _editMode,
-                      onCheckout: () {
-                        if (_checked.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Bạn chưa chọn sản phẩm.')),
-                          );
-                          return;
-                        }
-                        // TODO: điều hướng sang màn hình checkout
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Đi tới thanh toán…')),
-                        );
-                      },
+                      onCheckout: () => _onCheckout(
+                        uid: uid,
+                        cartId: cartId,
+                        allIds: allIds,
+                        usePoints: _useCoin, // truyền qua BE
+                      ),
                       onDeleteSelected: () async {
                         if (_checked.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -189,6 +243,7 @@ class _CartPageState extends ConsumerState<CartPage> {
                         ref.invalidate(cartItemsByCartProvider(cart.cartId));
                         ref.invalidate(cartByUserProvider(uid));
                       },
+                      busy: _creatingOrder,
                     ),
                   ],
                 );
@@ -200,15 +255,85 @@ class _CartPageState extends ConsumerState<CartPage> {
     );
   }
 
+  Future<void> _onCheckout({
+    required String uid,
+    required String cartId,
+    required Set<String> allIds,
+    required bool usePoints,
+  }) async {
+    if (_checked.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bạn chưa chọn sản phẩm.')),
+      );
+      return;
+    }
+
+    // API moveCartToOrder hiện tạo đơn từ TOÀN BỘ giỏ.
+    if (_checked.length != allIds.length) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Tạo đơn từ toàn bộ giỏ?'),
+          content: const Text(
+            'Hệ thống sẽ tạo đơn hàng từ toàn bộ giỏ (không chỉ các mục đã chọn). '
+                'Bạn có muốn tiếp tục không?',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Tiếp tục')),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+    }
+
+    // lấy ví
+    final wallet = await ref.read(walletRepoProvider).getByUserId(uid);
+    if (wallet == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bạn chưa có ví. Vào "Túi xu của tôi" để tạo ví trước nhé.')),
+      );
+      return;
+    }
+
+    setState(() => _creatingOrder = true);
+    try {
+      final order = await ref.read(orderRepoProvider).moveCartToOrder(
+        cartId: cartId,
+        walletId: wallet.walletId,
+        usePoints: usePoints,
+      );
+
+      // refresh
+      ref.invalidate(cartItemsByCartProvider(cartId));
+      ref.invalidate(cartByUserProvider(uid));
+      ref.invalidate(walletByUserProvider(uid));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tạo đơn hàng thành công!')),
+        );
+        context.push('/checkout', extra: CheckoutArgs(orderId: order.orderId));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tạo đơn thất bại: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _creatingOrder = false);
+    }
+  }
+
   Future<void> _changeQty(CartItem it, int next) async {
     if (next < 1) return;
     try {
       await ref.read(cartItemRepoProvider).update(
         it.cartItemId,
         quantity: next,
-        price: it.price, // giữ nguyên giá
+        price: it.price,
       );
-      // refresh list và tổng
       ref.invalidate(cartItemsByCartProvider(it.cartId));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -218,7 +343,7 @@ class _CartPageState extends ConsumerState<CartPage> {
   }
 }
 
-/// Hàng 1 item trong giỏ
+/// 1 dòng sản phẩm trong giỏ
 class _CartItemRow extends ConsumerWidget {
   final CartItem item;
   final bool ticked;
@@ -302,7 +427,9 @@ class _CartItemRow extends ConsumerWidget {
   }
 
   String _fmtVnd(double v) {
-    final s = v.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+    final s = v
+        .toStringAsFixed(0)
+        .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
     return '$s VND';
   }
 }
@@ -351,18 +478,24 @@ class _QtyControl extends StatelessWidget {
 class _CartBottomBar extends StatelessWidget {
   final bool selectAll;
   final ValueChanged<bool?> onToggleAll;
+  final double subtotal;
+  final double discount;
   final double total;
   final bool editMode;
   final VoidCallback onCheckout;
   final VoidCallback onDeleteSelected;
+  final bool busy;
 
   const _CartBottomBar({
     required this.selectAll,
     required this.onToggleAll,
+    required this.subtotal,
+    required this.discount,
     required this.total,
     required this.editMode,
     required this.onCheckout,
     required this.onDeleteSelected,
+    this.busy = false,
   });
 
   @override
@@ -389,7 +522,9 @@ class _CartBottomBar extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text('Tổng', style: TextStyle(color: Colors.white54)),
+                if (discount > 0)
+                  Text('Tiết kiệm ${_formatVnd(discount)}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12)),
                 Text(totalStr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
               ],
             ),
@@ -404,8 +539,12 @@ class _CartBottomBar extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              onPressed: editMode ? onDeleteSelected : onCheckout,
-              child: Text(editMode ? 'XÓA' : 'MUA HÀNG', style: const TextStyle(fontWeight: FontWeight.w800)),
+              onPressed: busy
+                  ? null
+                  : (editMode ? onDeleteSelected : onCheckout),
+              child: busy
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text(editMode ? 'XÓA' : 'MUA HÀNG', style: const TextStyle(fontWeight: FontWeight.w800)),
             ),
           ),
         ],
@@ -414,7 +553,12 @@ class _CartBottomBar extends StatelessWidget {
   }
 
   String _formatVnd(double v) {
-    final s = v.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+    final s = v
+        .toStringAsFixed(0)
+        .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
     return '$s VND';
   }
 }
+
+String _fmtNumber(int n) =>
+    n.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');

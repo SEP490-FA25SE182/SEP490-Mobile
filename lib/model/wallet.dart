@@ -22,9 +22,22 @@ class Wallet {
   });
 
   factory Wallet.fromJson(Map<String, dynamic> j) {
-    int _int(dynamic v) => v is int ? v : int.tryParse(v?.toString() ?? '0') ?? 0;
-    double _double(dynamic v) =>
-        v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '0') ?? 0.0;
+    int _int(dynamic v) {
+      if (v == null) return 0;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      final s = v.toString();
+      final asInt = int.tryParse(s);
+      if (asInt != null) return asInt;
+      final asDouble = double.tryParse(s);
+      return asDouble?.toInt() ?? 0;
+    }
+
+    double _double(dynamic v) {
+      if (v == null) return 0.0;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString()) ?? 0.0;
+    }
 
     return Wallet(
       walletId : (j['walletId'] ?? '').toString(),

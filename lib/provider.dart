@@ -5,6 +5,9 @@ import 'package:sep490_mobile/repository/blog_repository.dart';
 import 'package:sep490_mobile/repository/cart_item_repository.dart';
 import 'package:sep490_mobile/repository/cart_repository.dart';
 import 'package:sep490_mobile/repository/genre_repository.dart';
+import 'package:sep490_mobile/repository/order_detail_repository.dart';
+import 'package:sep490_mobile/repository/order_repository.dart';
+import 'package:sep490_mobile/repository/payment_repository.dart';
 import 'package:sep490_mobile/repository/vn_location_repository.dart';
 import 'package:sep490_mobile/repository/wallet_repository.dart';
 import 'core/config.dart';
@@ -15,6 +18,8 @@ import 'model/book.dart';
 import 'model/cart.dart';
 import 'model/cart_item.dart';
 import 'model/genre.dart';
+import 'model/order.dart';
+import 'model/order_detail.dart';
 import 'model/user_address.dart';
 import 'model/vn_location.dart';
 import 'model/wallet.dart';
@@ -141,3 +146,26 @@ final walletRepoProvider = Provider<WalletRepository>(
 final walletByUserProvider = FutureProvider.family<Wallet?, String>((ref, userId) async {
   return ref.read(walletRepoProvider).getByUserId(userId);
 });
+
+
+///OrderRepository
+final orderRepoProvider = Provider<OrderRepository>(
+      (ref) => OrderRepository(ref.read(dioProvider)),
+);
+
+final orderDetailRepoProvider = Provider<OrderDetailRepository>(
+      (ref) => OrderDetailRepository(ref.read(dioProvider)),
+);
+
+final orderByIdProvider = FutureProvider.family<Order, String>((ref, id) async {
+  return ref.read(orderRepoProvider).getById(id);
+});
+
+final orderDetailsByOrderProvider = FutureProvider.family<List<OrderDetail>, String>((ref, oid) async {
+  return ref.read(orderDetailRepoProvider).listByOrder(oid);
+});
+
+///PaymentRepository
+final paymentRepoProvider = Provider<PaymentRepository>(
+      (ref) => PaymentRepository(ref.read(dioProvider)),
+);
