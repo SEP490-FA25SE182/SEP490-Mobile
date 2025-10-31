@@ -1,4 +1,3 @@
-// lib/page/wallet/wallet_coin_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../widget/gs_image.dart';
 import '../../provider.dart';
 import '../../model/wallet.dart';
+import 'package:intl/intl.dart';
 
 class WalletCoinPage extends ConsumerStatefulWidget {
   const WalletCoinPage({super.key});
@@ -117,6 +117,7 @@ class _WalletCoinPageState extends ConsumerState<WalletCoinPage> {
                       data: (wallet) {
                         final hasWallet = wallet != null;
                         final coins = wallet?.coin ?? 0;
+                        final coinText = NumberFormat.decimalPattern('vi_VN').format(coins);
 
                         return Column(
                           children: [
@@ -147,11 +148,9 @@ class _WalletCoinPageState extends ConsumerState<WalletCoinPage> {
                                     if (hasWallet)
                                       RichText(
                                         text: TextSpan(
-                                          children: const [
-                                            // coins
-                                          ]..insertAll(0, [
+                                          children: [
                                             TextSpan(
-                                              text: '$coins',
+                                              text: coinText,
                                               style: const TextStyle(
                                                 color: yellow,
                                                 fontSize: 30,
@@ -166,7 +165,7 @@ class _WalletCoinPageState extends ConsumerState<WalletCoinPage> {
                                                 fontWeight: FontWeight.w700,
                                               ),
                                             ),
-                                          ]),
+                                          ]
                                         ),
                                       )
                                     else
