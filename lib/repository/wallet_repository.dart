@@ -1,9 +1,7 @@
-// lib/repository/wallet_repository.dart
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../model/wallet.dart';
-import '../provider.dart'; // chứa dioProvider
 
 class WalletRepository {
   final Dio _dio;

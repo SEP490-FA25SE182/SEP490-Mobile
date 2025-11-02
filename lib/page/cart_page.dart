@@ -59,7 +59,7 @@ class _CartPageState extends ConsumerState<CartPage> {
     }
 
     final cartAsync = ref.watch(cartByUserProvider(uid));
-    final walletAsync = ref.watch(walletByUserProvider(uid)); // ví (xu)
+    final walletAsync = ref.watch(walletByUserProvider(uid));
 
     return Scaffold(
       backgroundColor: Colors.transparent,

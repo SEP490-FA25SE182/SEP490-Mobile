@@ -84,6 +84,10 @@ final bookByIdProvider = FutureProvider.family<Book, String>((ref, id) async {
 final addressRepoProvider =
 Provider<AddressRepository>((ref) => AddressRepository(ref.read(dioProvider)));
 
+final addressByIdProvider = FutureProvider.family<UserAddress?, String>((ref, id) async {
+  return ref.read(addressRepoProvider).getOne(id);
+});
+
 // Danh sách địa chỉ theo userId
 final addressesByUserProvider =
 FutureProvider.family<List<UserAddress>, String>((ref, userId) async {
