@@ -112,4 +112,14 @@ class AddressRepository {
       mapDioError(e);
     }
   }
+
+  /// GET /api/rookie/users/addresses/{id}
+  Future<UserAddress?> getOne(String id) async {
+    try {
+      final res = await _dio.get('/api/rookie/users/addresses/$id');
+      return UserAddress.fromJson((res.data as Map).cast<String, dynamic>());
+    } on DioException catch (_) {
+      return null;
+    }
+  }
 }

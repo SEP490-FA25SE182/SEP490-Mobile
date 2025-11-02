@@ -2,12 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../provider.dart';
 import '../../model/order.dart';
 import '../../model/order_detail.dart';
 import '../../model/user_address.dart';
 import '../../widget/gs_image.dart';
+import '../../screen/order_detail_screen.dart';
 
 // Icon
 const _iconEdit = 'gs://sep490-fa25se182.firebasestorage.app/icon/edit.png';
@@ -100,25 +102,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                         const SizedBox(height: 16),
 
                         // ==== Danh sách sản phẩm ====
-                        detailsAsync.when(
-                          loading: () => const Center(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: CircularProgressIndicator(),
-                            ),
-                          ),
-                          error: (e, _) => Text(
-                            'Lỗi tải chi tiết đơn: $e',
-                            style: const TextStyle(color: Colors.redAccent),
-                          ),
-                          data: (list) => Column(
-                            children: [
-                              ...list.map((d) => _OrderItemRow(detail: d)),
-                              const SizedBox(height: 8),
-                              Container(height: 1, color: Colors.white24),
-                            ],
-                          ),
-                        ),
+                        OrderDetailSection(orderId: orderId),
 
                         const SizedBox(height: 12),
 
@@ -186,7 +170,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                     data: (order) => _BottomBar(
                       total: order.totalPrice,
                       busy: _placing,
-                      onPlace: () => _onPlaceOrder(order.orderId),
+                      onPlace: () => _onPlaceOrder(order),
                     ),
                     loading: () => const SizedBox.shrink(),
                     error: (_, __) => const SizedBox.shrink(),
@@ -198,6 +182,18 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
         ),
       ),
     );
+  }
+
+  // --- Helper: resolve addressId đang dùng ---
+  String? _resolveAddressId(String? userId) {
+    if (_selectedAddress != null) return _selectedAddress!.userAddressId;
+
+    if (userId == null || userId.isEmpty) return null;
+    final list = ref.read(addressesByUserProvider(userId)).value;
+    if (list == null || list.isEmpty) return null;
+
+    final def = list.where((e) => e.isDefault).toList();
+    return (def.isNotEmpty ? def.first : list.first).userAddressId;
   }
 
   // --- Address section ---
@@ -258,11 +254,9 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
               style: const TextStyle(color: Colors.redAccent),
             ),
             data: (list) {
-              // Ưu tiên default
               final defaults = list.where((e) => e.isDefault).toList();
-              final preferred = defaults.isNotEmpty ? defaults.first : (list.isNotEmpty ? list.first : null);
-
-              // Nếu chưa chọn thủ công, hiển thị mặc định
+              final preferred =
+              defaults.isNotEmpty ? defaults.first : (list.isNotEmpty ? list.first : null);
               final show = _selectedAddress ?? preferred;
 
               if (show == null) {
@@ -290,7 +284,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
   }
 
   // --- Đặt hàng ---
-  Future<void> _onPlaceOrder(String orderId) async {
+  Future<void> _onPlaceOrder(Order order) async {
     if (_method == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Hãy chọn phương thức thanh toán đi nà')),
@@ -298,17 +292,40 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
       return;
     }
 
+    final uid = ref.read(currentUserIdProvider);
+    final addressId = _resolveAddressId(uid);
+    if (addressId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn địa chỉ nhận hàng')),
+      );
+      return;
+    }
+
     setState(() => _placing = true);
     try {
       if (_method == _PayMethod.payos) {
-        final res = await ref.read(paymentRepoProvider).createCheckout(orderId);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tạo thanh toán thành công! Mã: ${res.orderCode}')),
+        // 1) Update order
+        await ref.read(orderRepoProvider).update(
+          order.orderId,
+          userAddressId: addressId,
+          status: order.status,
         );
-        // TODO: mở WebView/Browser tới res.checkoutUrl
+
+        // 2) Tạo link PayOS
+        final res = await ref.read(paymentRepoProvider).createCheckout(order.orderId);
+
+        // 3) Mở trình duyệt/WebView
+        if (!mounted) return;
+        final ok = await launchUrl(
+          Uri.parse(res.checkoutUrl),
+          mode: LaunchMode.externalApplication,
+        );
+        if (!ok) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Không mở được trình duyệt. Link: ${res.checkoutUrl}')),
+          );
+        }
       } else {
-        // TODO: Gọi API xác nhận COD sau
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đặt hàng COD — sẽ bổ sung API sau!')),
@@ -436,62 +453,6 @@ class _BottomBar extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
                   : const Text('ĐẶT HÀNG', style: TextStyle(fontWeight: FontWeight.w800)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OrderItemRow extends ConsumerWidget {
-  final OrderDetail detail;
-  const _OrderItemRow({required this.detail});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bAsync = ref.watch(bookByIdProvider(detail.bookId));
-    final priceStr = _fmtVnd(detail.price);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              width: 54,
-              height: 70,
-              child: bAsync.when(
-                data: (b) => (b.coverUrl != null && b.coverUrl!.isNotEmpty)
-                    ? GsImage(url: b.coverUrl!, fit: BoxFit.cover)
-                    : Container(color: const Color(0x225B6CF3)),
-                loading: () => Container(color: const Color(0x1FFFFFFF)),
-                error: (_, __) => Container(color: const Color(0x225B6CF3)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: bAsync.when(
-              data: (b) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    b.bookName ?? '(Không rõ tên sách)',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 4),
-                  Text('x${detail.quantity}', style: const TextStyle(color: Colors.white54)),
-                  const SizedBox(height: 6),
-                  Text(priceStr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-                ],
-              ),
-              loading: () => const SizedBox(height: 20),
-              error: (_, __) => const Text('(Lỗi tên sách)', style: TextStyle(color: Colors.white70)),
             ),
           ),
         ],

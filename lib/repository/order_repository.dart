@@ -47,5 +47,64 @@ class OrderRepository {
         .map((e) => Order.fromJson(e.cast<String, dynamic>()))
         .toList();
   }
+
+  /// GET SEARCH
+  Future<List<Order>> search({
+    required String userId,
+    String? status,
+    int page = 0,
+    int size = 20,
+  }) async {
+    final res = await _dio.get(
+      '/api/rookie/users/orders/search',
+      queryParameters: <String, dynamic>{
+        'userId': userId,
+        if (status != null) 'status': status,
+        'page': page,
+        'size': size,
+      },
+    );
+
+    final data = res.data;
+
+    final List items;
+    if (data is Map && data['content'] is List) {
+      items = data['content'] as List;
+    } else if (data is List) {
+      items = data;
+    } else {
+      items = const <dynamic>[];
+    }
+
+    return items
+        .whereType<Map>()
+        .map((e) => Order.fromJson(e.cast<String, dynamic>()))
+        .toList();
+  }
+
+  /// PUT /api/rookie/users/orders/{id}
+  Future<Order> update(
+      String id, {
+        int? amount,
+        double? totalPrice,
+        int? status,
+        String? userAddressId,
+      }) async {
+    final body = <String, dynamic>{
+      'amount': amount,
+      'totalPrice': totalPrice,
+      'status': status,
+      'userAddressId': userAddressId,
+    }..removeWhere((_, v) => v == null);
+
+    final res = await _dio.put(
+      '/api/rookie/users/orders/$id',
+      data: body,
+      options: Options(contentType: Headers.jsonContentType),
+    );
+    return Order.fromJson((res.data as Map).cast<String, dynamic>());
+  }
+
+
 }
 

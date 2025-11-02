@@ -4,10 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:sep490_mobile/page/blog/blog_detail_page.dart';
 import 'package:sep490_mobile/page/book/book_detail_page.dart';
 import 'package:sep490_mobile/page/order/checkout_page.dart';
+import 'package:sep490_mobile/page/order/order_detail_page.dart';
+import 'package:sep490_mobile/page/order/order_pending_page.dart';
+import 'package:sep490_mobile/page/order/order_processing_page.dart';
 import 'package:sep490_mobile/page/profile/edit_address_page.dart';
 import 'package:sep490_mobile/page/profile/location_page.dart';
-import 'package:sep490_mobile/page/profile/wallet_coin_page.dart';
+import 'package:sep490_mobile/page/wallet/wallet_coin_page.dart';
 import 'package:sep490_mobile/page/scan_page.dart';
+import 'package:sep490_mobile/page/wallet/wallet_money_page.dart';
 import 'provider.dart';
 
 import 'page/home_page.dart';
@@ -59,7 +63,11 @@ class MyApp extends StatelessWidget {
           },
         ),
         GoRoute(path: '/wallet/coin', builder: (_, __) => const WalletCoinPage()),
+        GoRoute(path: '/wallet/money', builder: (_, __) => const WalletMoneyPage()),
         GoRoute(path: '/checkout', builder: (ctx, st) => const CheckoutPage(),),
+        GoRoute(path: '/orders/pending', builder: (ctx, st) => const OrderPendingPage(),),
+        GoRoute(path: '/orders/processing', builder: (ctx, st) => const OrderProcessingPage(),),
+        GoRoute(path: '/orders/detail/:orderId', builder: (ctx, st) {final oid = st.pathParameters['orderId'] ?? '';return OrderDetailPage(orderId: oid);},),
       ],
     );
 
