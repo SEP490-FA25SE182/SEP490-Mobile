@@ -89,12 +89,14 @@ class OrderRepository {
         double? totalPrice,
         int? status,
         String? userAddressId,
+        String? reason,
       }) async {
     final body = <String, dynamic>{
       'amount': amount,
       'totalPrice': totalPrice,
       'status': status,
       'userAddressId': userAddressId,
+      'reason': reason,
     }..removeWhere((_, v) => v == null);
 
     final res = await _dio.put(

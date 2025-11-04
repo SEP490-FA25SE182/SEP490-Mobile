@@ -4,14 +4,23 @@ import 'package:go_router/go_router.dart';
 import 'package:sep490_mobile/page/blog/blog_detail_page.dart';
 import 'package:sep490_mobile/page/book/book_detail_page.dart';
 import 'package:sep490_mobile/page/order/checkout_page.dart';
+import 'package:sep490_mobile/page/order/feedback_page.dart';
+import 'package:sep490_mobile/page/order/order_cancel_page.dart';
+import 'package:sep490_mobile/page/order/order_delivered_page.dart';
 import 'package:sep490_mobile/page/order/order_detail_page.dart';
 import 'package:sep490_mobile/page/order/order_pending_page.dart';
 import 'package:sep490_mobile/page/order/order_processing_page.dart';
+import 'package:sep490_mobile/page/order/order_return_page.dart';
+import 'package:sep490_mobile/page/order/order_shipping_page.dart';
+import 'package:sep490_mobile/page/order/payment_cancel_page.dart';
+import 'package:sep490_mobile/page/order/payment_success_page.dart';
+import 'package:sep490_mobile/page/order/return_page.dart';
 import 'package:sep490_mobile/page/profile/edit_address_page.dart';
 import 'package:sep490_mobile/page/profile/location_page.dart';
 import 'package:sep490_mobile/page/wallet/wallet_coin_page.dart';
 import 'package:sep490_mobile/page/scan_page.dart';
 import 'package:sep490_mobile/page/wallet/wallet_money_page.dart';
+import 'package:sep490_mobile/widget/deep_link_service.dart';
 import 'provider.dart';
 
 import 'page/home_page.dart';
@@ -28,49 +37,11 @@ import 'page/profile/edit_address_page.dart' show EditAddressArgs, EditAddressPa
 import 'page/profile/create_address_page.dart';
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final GoRouter router;
+  const MyApp({super.key, required this.router});
 
   @override
   Widget build(BuildContext context) {
-    final router = GoRouter(
-      initialLocation: '/',
-      routes: [
-        GoRoute(path: '/',        name: 'home',    builder: (_, __) => const HomePage()),
-        GoRoute(path: '/booklist', name: 'booklist', builder: (_, __) => const BookListPage()),
-        GoRoute(path: '/blogs',   name: 'blogs',   builder: (_, __) => const BlogPage()),
-        //GoRoute(path: '/library', name: 'library', builder: (_, __) => const LibraryPage()),
-        GoRoute(path: '/cart',    name: 'cart',    builder: (_, __) => const CartPage()),
-        GoRoute(path: '/scan', builder: (_, __) => const ScanPage(),),
-        GoRoute(path: '/forgot_password',    builder: (_, __) => const ForgotPasswordPage()),
-        GoRoute(path: '/account/edit', builder: (_, __) => const EditProfilePage()),
-        GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
-        GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
-        GoRoute(
-          path: '/books/:id',
-          name: 'book_detail',
-          builder: (context, state) {
-            final id = state.pathParameters['id']!;
-            return BookDetailPage(bookId: id);
-          },
-        ),
-        GoRoute(path: '/profile', name: 'profile', builder: (context, state) => const _ProfileLoader(),),
-        GoRoute(path: '/address/edit', builder: (_, state) => EditAddressPage(args: state.extra as EditAddressArgs),),
-        GoRoute(path: '/address/create', builder: (_, __) => const CreateAddressPage(),),
-        GoRoute(path: '/blogs/:id', builder: (context, state) => BlogDetailPage(blogId: state.pathParameters['id']!),),
-        GoRoute(path: '/location', builder: (ctx, st) {
-            final uid = st.extra as String;
-            return LocationPage(userId: uid);
-          },
-        ),
-        GoRoute(path: '/wallet/coin', builder: (_, __) => const WalletCoinPage()),
-        GoRoute(path: '/wallet/money', builder: (_, __) => const WalletMoneyPage()),
-        GoRoute(path: '/checkout', builder: (ctx, st) => const CheckoutPage(),),
-        GoRoute(path: '/orders/pending', builder: (ctx, st) => const OrderPendingPage(),),
-        GoRoute(path: '/orders/processing', builder: (ctx, st) => const OrderProcessingPage(),),
-        GoRoute(path: '/orders/detail/:orderId', builder: (ctx, st) {final oid = st.pathParameters['orderId'] ?? '';return OrderDetailPage(orderId: oid);},),
-      ],
-    );
-
     return MaterialApp.router(
       routerConfig: router,
       debugShowCheckedModeBanner: false,
@@ -82,6 +53,63 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+GoRouter buildRouter() => GoRouter(
+  initialLocation: '/',
+    redirect: (context, state) {
+      final uri = state.uri;
+      if (uri.scheme == 'rookies' && uri.host == 'payment') {
+        if (uri.path == '/success') {
+          return '/payment/success?${uri.query}';
+        }
+        if (uri.path == '/cancel') {
+          return '/payment/cancel?${uri.query}';
+        }
+      }
+      return null;
+    },
+  routes: [
+    GoRoute(path: '/',        name: 'home',    builder: (_, __) => const HomePage()),
+    GoRoute(path: '/booklist', name: 'booklist', builder: (_, __) => const BookListPage()),
+    GoRoute(path: '/blogs',   name: 'blogs',   builder: (_, __) => const BlogPage()),
+    GoRoute(path: '/cart',    name: 'cart',    builder: (_, __) => const CartPage()),
+    GoRoute(path: '/scan', builder: (_, __) => const ScanPage()),
+    GoRoute(path: '/forgot_password', builder: (_, __) => const ForgotPasswordPage()),
+    GoRoute(path: '/account/edit', builder: (_, __) => const EditProfilePage()),
+    GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
+    GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
+    GoRoute(
+      path: '/books/:id',
+      name: 'book_detail',
+      builder: (context, state) => BookDetailPage(bookId: state.pathParameters['id']!),
+    ),
+    GoRoute(path: '/profile', name: 'profile', builder: (_, __) => const _ProfileLoader()),
+    GoRoute(path: '/address/edit', builder: (_, st) => EditAddressPage(args: st.extra as EditAddressArgs)),
+    GoRoute(path: '/address/create', builder: (_, __) => const CreateAddressPage()),
+    GoRoute(path: '/blogs/:id', builder: (context, st) => BlogDetailPage(blogId: st.pathParameters['id']!)),
+    GoRoute(path: '/location', builder: (ctx, st) => LocationPage(userId: st.extra as String)),
+    GoRoute(path: '/wallet/coin', builder: (_, __) => const WalletCoinPage()),
+    GoRoute(path: '/wallet/money', builder: (_, __) => const WalletMoneyPage()),
+    GoRoute(path: '/checkout', builder: (ctx, st) => const CheckoutPage()),
+    GoRoute(
+      path: '/payment/success',
+      builder: (ctx, st) => PaymentSuccessPage(orderId: st.uri.queryParameters['orderId']),
+    ),
+    GoRoute(
+      path: '/payment/cancel',
+      builder: (ctx, st) => PaymentCancelPage(orderId: st.uri.queryParameters['orderId']),
+    ),
+    GoRoute(path: '/orders/pending', builder: (ctx, st) => const OrderPendingPage()),
+    GoRoute(path: '/orders/processing', builder: (ctx, st) => const OrderProcessingPage()),
+    GoRoute(path: '/orders/shipping', builder: (ctx, st) => const OrderShippingPage()),
+    GoRoute(path: '/orders/delivered', builder: (ctx, st) => const OrderDeliveredPage()),
+    GoRoute(path: '/orders/cancel', builder: (ctx, st) => const OrderCancelPage()),
+    GoRoute(path: '/orders/return', builder: (ctx, st) => const OrderReturnPage()),
+    GoRoute(path: '/orders/return/:orderId', builder: (ctx, st) => ReturnPage(orderId: st.pathParameters['orderId']!),),
+    GoRoute(path: '/orders/feedback/:orderId', builder: (ctx, st) => FeedbackPage(orderId: st.pathParameters['orderId']!),),
+    GoRoute(path: '/orders/detail/:orderId', builder: (ctx, st) => OrderDetailPage(orderId: st.pathParameters['orderId'] ?? ''),),
+  ],
+);
 
 /// Đọc userId từ Provider, sau đó fetch User và Role
 class _ProfileLoader extends ConsumerWidget {
