@@ -18,7 +18,7 @@ class BookRepository {
         'page': page,
         'size': size,
         'sort': sort,
-        if (search != null && search.isNotEmpty) 'search': search,
+        if (search != null && search.isNotEmpty) 'q': search,
         if (genreId != null && genreId.isNotEmpty) 'genreId': genreId,
       };
 
