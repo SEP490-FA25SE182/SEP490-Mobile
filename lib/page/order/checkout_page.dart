@@ -311,8 +311,16 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
           status: order.status,
         );
 
+        // Tạo link PayOS + truyền returnUrl / cancelUrl
+        final returnUrl = 'rookies://payment/success?orderId=${order.orderId}';
+        final cancelUrl = 'rookies://payment/cancel?orderId=${order.orderId}';
+
         // 2) Tạo link PayOS
-        final res = await ref.read(paymentRepoProvider).createCheckout(order.orderId);
+        final res = await ref.read(paymentRepoProvider).createCheckout(
+          order.orderId,
+          returnUrl: returnUrl,
+          cancelUrl: cancelUrl,
+        );
 
         // 3) Mở trình duyệt/WebView
         if (!mounted) return;
@@ -326,10 +334,20 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
           );
         }
       } else {
+        // COD: chỉ cần cập nhật địa chỉ
+        await ref.read(orderRepoProvider).update(
+          order.orderId,
+          userAddressId: addressId,
+          status: order.status,
+        );
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đặt hàng COD — sẽ bổ sung API sau!')),
+          const SnackBar(content: Text('Đặt hàng thành công')),
         );
+
+        // Điều hướng sang danh sách "Chờ xác nhận"
+        context.go('/orders/pending');
       }
     } on DioException catch (e) {
       final sc = e.response?.statusCode;

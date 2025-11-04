@@ -8,10 +8,22 @@ class PaymentRepository {
   final Dio _dio;
   PaymentRepository(this._dio);
 
-  /// POST /api/rookie/payments/{orderId}/checkout
-  Future<CreateCheckoutResponse> createCheckout(String orderId) async {
-    final res = await _dio.post('/api/rookie/payments/$orderId/checkout');
-    return CreateCheckoutResponse.fromJson((res.data as Map).cast<String, dynamic>());
+  /// POST /api/rookie/payments/{orderId}/checkout?returnUrl=...&cancelUrl=...
+  Future<CreateCheckoutResponse> createCheckout(
+      String orderId, {
+        String? returnUrl,
+        String? cancelUrl,
+      }) async {
+    final res = await _dio.post(
+      '/api/rookie/payments/$orderId/checkout',
+      queryParameters: <String, dynamic>{
+        if (returnUrl != null && returnUrl.isNotEmpty) 'returnUrl': returnUrl,
+        if (cancelUrl != null && cancelUrl.isNotEmpty) 'cancelUrl': cancelUrl,
+      },
+    );
+    return CreateCheckoutResponse.fromJson(
+      (res.data as Map).cast<String, dynamic>(),
+    );
   }
 }
 

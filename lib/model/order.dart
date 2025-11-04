@@ -13,6 +13,7 @@ class Order {
   final String walletId;
   final String cartId;
   final String? userAddressId;
+  final String? reason;
 
   final List<OrderDetail> orderDetails;
 
@@ -26,6 +27,7 @@ class Order {
     required this.walletId,
     required this.cartId,
     this.userAddressId,
+    this.reason,
     this.orderDetails = const [],
   });
 
@@ -46,6 +48,13 @@ class Order {
       return s.isEmpty ? null : s;
     }
 
+    String? _reason() {
+      final v = j['reason'];
+      if (v == null) return null;
+      final s = v.toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
     return Order(
       orderId      : (j['orderId'] ?? '').toString(),
       amount       : _int(j['amount']),
@@ -56,6 +65,7 @@ class Order {
       walletId     : (j['walletId'] ?? '').toString(),
       cartId       : (j['cartId'] ?? '').toString(),
       userAddressId: _userAddressId(),
+      reason       : _reason(),
       orderDetails : details,
     );
   }
@@ -70,6 +80,7 @@ class Order {
     'walletId'     : walletId,
     'cartId'       : cartId,
     if (userAddressId != null) 'userAddressId': userAddressId,
+    if (reason != null && reason!.isNotEmpty) 'reason': reason,
     'orderDetails' : orderDetails.map((e) => e.toJson()).toList(),
   };
 }

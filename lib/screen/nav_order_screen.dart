@@ -55,7 +55,7 @@ class NavOrderScreen extends StatelessWidget {
                   t.label,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: active ? Colors.pinkAccent : Colors.white70,
+                    color: active ? Colors.cyanAccent : Colors.white70,
 
                   ),
                 ),
