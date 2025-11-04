@@ -16,14 +16,14 @@ String _fmtVnd(num v) {
 /// ====== OrderList  ======
 class OrderList extends StatelessWidget {
   final List<Order> orders;
-  final String actionLabel;
+  final String? actionLabel;
   final void Function(Order order) onAction;
   final void Function(Order order)? onSeeMore;
 
   const OrderList({
     super.key,
     required this.orders,
-    required this.actionLabel,
+    this.actionLabel,
     required this.onAction,
     this.onSeeMore,
   });
@@ -58,21 +58,34 @@ class OrderList extends StatelessWidget {
 /// ====== OrderCard ======
 class OrderCard extends ConsumerWidget {
   final Order order;
-  final String actionLabel;
+  final String? actionLabel;
   final VoidCallback onAction;
   final VoidCallback? onSeeMore;
 
   const OrderCard({
     super.key,
     required this.order,
-    required this.actionLabel,
+    this.actionLabel,
     required this.onAction,
     this.onSeeMore,
   });
 
+  String _defaultActionLabelForStatus(int status) {
+    switch (status) {
+      case 1: return 'Hủy đơn hàng';            // PENDING
+      case 2: return 'Xem chi tiết';            // PROCESSING
+      case 3: return 'Đã nhận được hàng';       // SHIPPING
+      case 4: return 'Đánh giá';                // DELIVERED
+      case 5: return 'Xem chi tiết';            // CANCELLED
+      case 6: return 'Xem chi tiết';            // RETURNED
+      default: return 'Xem chi tiết';
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailsAsync = ref.watch(orderDetailsByOrderProvider(order.orderId));
+    final btnText = actionLabel ?? _defaultActionLabelForStatus(order.status);
 
     return Container(
       decoration: BoxDecoration(
@@ -168,7 +181,6 @@ class OrderCard extends ConsumerWidget {
           ),
 
           // Footer
-          // Footer
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: Column(
@@ -215,7 +227,7 @@ class OrderCard extends ConsumerWidget {
                   side: const BorderSide(color: Colors.white70),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: Text(actionLabel),
+                child: Text(btnText),
               ),
             ),
           ),
