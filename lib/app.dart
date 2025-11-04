@@ -74,6 +74,7 @@ GoRouter buildRouter() => GoRouter(
     GoRoute(path: '/booklist', name: 'booklist', builder: (_, __) => const BookListPage()),
     GoRoute(path: '/blogs',   name: 'blogs',   builder: (_, __) => const BlogPage()),
     GoRoute(path: '/cart',    name: 'cart',    builder: (_, __) => const CartPage()),
+    GoRoute(path: '/library',    name: 'library',    builder: (_, __) => const BookshelvePage()),
     GoRoute(path: '/scan', builder: (_, __) => const ScanPage()),
     GoRoute(path: '/forgot_password', builder: (_, __) => const ForgotPasswordPage()),
     GoRoute(path: '/account/edit', builder: (_, __) => const EditProfilePage()),
