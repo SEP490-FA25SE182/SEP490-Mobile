@@ -6,6 +6,7 @@ import '../../provider.dart';
 import '../../model/blog.dart';
 import '../../screen/nav_bottom_screen.dart';
 import '../../widget/gs_image.dart';
+import 'blog_comment_page.dart';
 
 class BlogDetailPage extends ConsumerWidget {
   final String blogId;
@@ -161,6 +162,10 @@ class _DetailBody extends ConsumerWidget {
               }).toList(),
             ),
           ),
+        ),
+
+        SliverToBoxAdapter(
+          child: BlogCommentSection(blogId: blog.blogId),
         ),
       ],
     );
