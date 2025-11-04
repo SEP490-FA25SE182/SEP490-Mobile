@@ -10,6 +10,7 @@ import 'package:sep490_mobile/page/order/order_delivered_page.dart';
 import 'package:sep490_mobile/page/order/order_detail_page.dart';
 import 'package:sep490_mobile/page/order/order_pending_page.dart';
 import 'package:sep490_mobile/page/order/order_processing_page.dart';
+import 'package:sep490_mobile/page/bookshelve/bookshelve_page.dart';
 import 'package:sep490_mobile/page/order/order_return_page.dart';
 import 'package:sep490_mobile/page/order/order_shipping_page.dart';
 import 'package:sep490_mobile/page/order/payment_cancel_page.dart';

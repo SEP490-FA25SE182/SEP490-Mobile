@@ -6,7 +6,6 @@ import '../provider.dart';
 import '../repository/book_repository.dart';
 import '../widget/gs_image.dart';
 
-/// --- PROVIDER + STATE ---
 final bookListProvider =
 StateNotifierProvider<BookListNotifier, AsyncValue<List<Book>>>(
       (ref) => BookListNotifier(ref.watch(bookRepoProvider)),
@@ -14,8 +13,6 @@ StateNotifierProvider<BookListNotifier, AsyncValue<List<Book>>>(
 
 class BookListNotifier extends StateNotifier<AsyncValue<List<Book>>> {
   final BookRepository _repo;
-
-  // Pagination & Filters
   int _currentPage = 0;
   static const int _pageSize = 20;
   bool _hasNext = true;
@@ -49,7 +46,6 @@ class BookListNotifier extends StateNotifier<AsyncValue<List<Book>>> {
       _books = newBooks;
       _hasNext = newBooks.length == _pageSize;
       _hasPrevious = _currentPage > 0;
-
       state = AsyncData(List.from(_books));
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -77,10 +73,6 @@ class BookListNotifier extends StateNotifier<AsyncValue<List<Book>>> {
     }
   }
 
-  void lastPage() async {
-    // Optional: only works if backend provides total count (can extend later)
-  }
-
   void search(String query) {
     _searchQuery = query.trim();
     fetchBooks(reset: true);
@@ -96,12 +88,18 @@ class BookListNotifier extends StateNotifier<AsyncValue<List<Book>>> {
   bool get hasPrevious => _hasPrevious;
 }
 
-/// --- UI PAGE ---
-class BookListPage extends ConsumerWidget {
+class BookListPage extends ConsumerStatefulWidget {
   const BookListPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BookListPage> createState() => _BookListPageState();
+}
+
+class _BookListPageState extends ConsumerState<BookListPage> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
     final booksAsync = ref.watch(bookListProvider);
     final notifier = ref.read(bookListProvider.notifier);
 
@@ -120,29 +118,39 @@ class BookListPage extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            /// --- SEARCH BAR ---
-            TextField(
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Tìm kiếm sách...',
-                hintStyle: const TextStyle(color: Colors.white54),
-                prefixIcon: const Icon(Icons.search, color: Colors.white70),
-                filled: true,
-                fillColor: const Color(0xFF18223A),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF18223A),
+                borderRadius: BorderRadius.circular(16),
               ),
-              onSubmitted: notifier.search,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        hintText: 'Tìm kiếm sách...',
+                        hintStyle: TextStyle(color: Colors.white54),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      onSubmitted: (value) => notifier.search(value),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.search, color: Colors.white70),
+                    onPressed: () {
+                      final query = _searchController.text.trim();
+                      notifier.search(query);
+                    },
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
-
-            /// --- FILTER DROPDOWN (THỂ LOẠI) ---
             _GenreFilterDropdown(onChanged: notifier.filterByGenre),
             const SizedBox(height: 16),
-
-            /// --- BOOK GRID ---
             Expanded(
               child: booksAsync.when(
                 loading: () => const Center(
@@ -179,12 +187,11 @@ class BookListPage extends ConsumerWidget {
                           itemCount: books.length,
                           itemBuilder: (_, i) {
                             final book = books[i];
-                            final author = ref.watch(
-                                userByIdProvider(book.authorId ?? ''));
+                            final author =
+                            ref.watch(userByIdProvider(book.authorId ?? ''));
 
                             return GestureDetector(
-                              onTap: () =>
-                                  context.push('/books/${book.bookId}'),
+                              onTap: () => context.push('/books/${book.bookId}'),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -239,8 +246,6 @@ class BookListPage extends ConsumerWidget {
                           },
                         ),
                       ),
-
-                      /// --- PAGINATION BUTTONS ---
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -264,16 +269,14 @@ class BookListPage extends ConsumerWidget {
                                 color: Colors.white, fontSize: 14),
                           ),
                           IconButton(
-                            onPressed: notifier.hasNext
-                                ? notifier.nextPage
-                                : null,
+                            onPressed:
+                            notifier.hasNext ? notifier.nextPage : null,
                             icon: const Icon(Icons.chevron_right),
                             color: Colors.white70,
                           ),
                           IconButton(
-                            onPressed: notifier.hasNext
-                                ? notifier.nextPage
-                                : null, // Placeholder for ">>"
+                            onPressed:
+                            notifier.hasNext ? notifier.nextPage : null,
                             icon: const Icon(Icons.last_page),
                             color: Colors.white70,
                           ),
@@ -291,7 +294,6 @@ class BookListPage extends ConsumerWidget {
   }
 }
 
-/// --- GENRE FILTER DROPDOWN ---
 class _GenreFilterDropdown extends ConsumerWidget {
   final ValueChanged<String?> onChanged;
 

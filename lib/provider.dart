@@ -9,6 +9,9 @@ import 'package:sep490_mobile/repository/genre_repository.dart';
 import 'package:sep490_mobile/repository/order_detail_repository.dart';
 import 'package:sep490_mobile/repository/order_repository.dart';
 import 'package:sep490_mobile/repository/payment_repository.dart';
+import 'package:sep490_mobile/repository/bookshelve_repository.dart';
+import 'package:sep490_mobile/repository/genre_repository.dart';
+import 'package:sep490_mobile/repository/notification_repository.dart';
 import 'package:sep490_mobile/repository/vn_location_repository.dart';
 import 'package:sep490_mobile/repository/wallet_repository.dart';
 import 'core/config.dart';
@@ -18,6 +21,7 @@ import 'model/blog.dart';
 import 'model/book.dart';
 import 'model/cart.dart';
 import 'model/cart_item.dart';
+import 'model/bookshelve.dart';
 import 'model/comment.dart';
 import 'model/genre.dart';
 import 'model/order.dart';
@@ -175,6 +179,40 @@ final orderDetailsByOrderProvider = FutureProvider.family<List<OrderDetail>, Str
 final paymentRepoProvider = Provider<PaymentRepository>(
       (ref) => PaymentRepository(ref.read(dioProvider)),
 );
+
+final bookshelveRepoProvider = Provider<BookshelveRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+  return BookshelveRepository(dio);
+});
+
+// trạng thái tìm kiếm (Bookshelve)
+final bookshelveSearchProvider = StateProvider<String>((_) => '');
+
+// provider family: input = userId
+final bookshelvesProvider = FutureProvider.family<List<Bookshelve>, String>((ref, userId) async {
+  final repo = ref.watch(bookshelveRepoProvider);
+  final q = ref.watch(bookshelveSearchProvider);
+  // gọi repo với q nếu có
+  return repo.listByUser(
+    userId: userId,
+    page: 0,
+    size: 10,
+    searchQuery: q.isNotEmpty ? q : null,
+    sort: ['createdAt-desc'],
+  );
+});
+
+final booksByShelfProvider = FutureProvider.family<List<Book>, String>((ref, shelfId) async {
+  final repo = ref.watch(bookRepoProvider);
+  return repo.getBooksByShelfId(shelfId, sort: ['createdAt-desc']);
+});
+
+
+
+final notificationRepoProvider = Provider<NotificationRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+  return NotificationRepository(dio);
+});
 
 ///CommentRepository
 final commentRepoProvider = Provider<CommentRepository>(
