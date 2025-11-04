@@ -4,6 +4,7 @@ import 'package:sep490_mobile/repository/address_repository.dart';
 import 'package:sep490_mobile/repository/blog_repository.dart';
 import 'package:sep490_mobile/repository/cart_item_repository.dart';
 import 'package:sep490_mobile/repository/cart_repository.dart';
+import 'package:sep490_mobile/repository/comment_repository.dart';
 import 'package:sep490_mobile/repository/genre_repository.dart';
 import 'package:sep490_mobile/repository/order_detail_repository.dart';
 import 'package:sep490_mobile/repository/order_repository.dart';
@@ -21,6 +22,7 @@ import 'model/book.dart';
 import 'model/cart.dart';
 import 'model/cart_item.dart';
 import 'model/bookshelve.dart';
+import 'model/comment.dart';
 import 'model/genre.dart';
 import 'model/order.dart';
 import 'model/order_detail.dart';
@@ -212,3 +214,17 @@ final notificationRepoProvider = Provider<NotificationRepository>((ref) {
   return NotificationRepository(dio);
 });
 
+///CommentRepository
+final commentRepoProvider = Provider<CommentRepository>(
+      (ref) => CommentRepository(ref.read(dioProvider)),
+);
+
+final commentCountProvider =
+FutureProvider.family<int, String>((ref, blogId) {
+  return ref.read(commentRepoProvider).countPublishedByBlog(blogId);
+});
+
+final commentsByBlogProvider =
+FutureProvider.family<List<Comment>, String>((ref, blogId) {
+  return ref.read(commentRepoProvider).getByBlogId(blogId);
+});

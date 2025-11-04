@@ -24,6 +24,8 @@ dependencies:
   google_sign_in: ^6.2.1
   mobile_scanner: ^3.5.7
   url_launcher: ^6.3.0
+  video_player: ^2.9.1
+  app_links: ^6.4.1
 
 dev_dependencies:
   flutter_test:
