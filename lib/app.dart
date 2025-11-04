@@ -7,6 +7,7 @@ import 'package:sep490_mobile/page/order/checkout_page.dart';
 import 'package:sep490_mobile/page/order/order_detail_page.dart';
 import 'package:sep490_mobile/page/order/order_pending_page.dart';
 import 'package:sep490_mobile/page/order/order_processing_page.dart';
+import 'package:sep490_mobile/page/bookshelve/bookshelve_page.dart';
 import 'package:sep490_mobile/page/profile/edit_address_page.dart';
 import 'package:sep490_mobile/page/profile/location_page.dart';
 import 'package:sep490_mobile/page/wallet/wallet_coin_page.dart';
@@ -52,6 +53,10 @@ class MyApp extends StatelessWidget {
             final id = state.pathParameters['id']!;
             return BookDetailPage(bookId: id);
           },
+        ),
+        GoRoute(
+          path: '/library',
+          builder: (context, _) => const BookshelvePage(),
         ),
         GoRoute(path: '/profile', name: 'profile', builder: (context, state) => const _ProfileLoader(),),
         GoRoute(path: '/address/edit', builder: (_, state) => EditAddressPage(args: state.extra as EditAddressArgs),),

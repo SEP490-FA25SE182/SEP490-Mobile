@@ -8,6 +8,9 @@ import 'package:sep490_mobile/repository/genre_repository.dart';
 import 'package:sep490_mobile/repository/order_detail_repository.dart';
 import 'package:sep490_mobile/repository/order_repository.dart';
 import 'package:sep490_mobile/repository/payment_repository.dart';
+import 'package:sep490_mobile/repository/bookshelve_repository.dart';
+import 'package:sep490_mobile/repository/genre_repository.dart';
+import 'package:sep490_mobile/repository/notification_repository.dart';
 import 'package:sep490_mobile/repository/vn_location_repository.dart';
 import 'package:sep490_mobile/repository/wallet_repository.dart';
 import 'core/config.dart';
@@ -17,6 +20,7 @@ import 'model/blog.dart';
 import 'model/book.dart';
 import 'model/cart.dart';
 import 'model/cart_item.dart';
+import 'model/bookshelve.dart';
 import 'model/genre.dart';
 import 'model/order.dart';
 import 'model/order_detail.dart';
@@ -173,3 +177,19 @@ final orderDetailsByOrderProvider = FutureProvider.family<List<OrderDetail>, Str
 final paymentRepoProvider = Provider<PaymentRepository>(
       (ref) => PaymentRepository(ref.read(dioProvider)),
 );
+
+final bookshelveRepoProvider = Provider<BookshelveRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+  return BookshelveRepository(dio);
+});
+
+final bookshelvesProvider = FutureProvider.family<List<Bookshelve>, String>((ref, userId) {
+  final repo = ref.watch(bookshelveRepoProvider);
+  return repo.listByUser(userId);
+});
+
+final notificationRepoProvider = Provider<NotificationRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+  return NotificationRepository(dio);
+});
+
