@@ -185,14 +185,13 @@ final bookshelveRepoProvider = Provider<BookshelveRepository>((ref) {
   return BookshelveRepository(dio);
 });
 
-// trạng thái tìm kiếm (Bookshelve)
+//Bookshelve
 final bookshelveSearchProvider = StateProvider<String>((_) => '');
 
 // provider family: input = userId
 final bookshelvesProvider = FutureProvider.family<List<Bookshelve>, String>((ref, userId) async {
   final repo = ref.watch(bookshelveRepoProvider);
   final q = ref.watch(bookshelveSearchProvider);
-  // gọi repo với q nếu có
   return repo.listByUser(
     userId: userId,
     page: 0,
