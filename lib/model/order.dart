@@ -12,6 +12,7 @@ class Order {
   final int status;
   final String walletId;
   final String cartId;
+  final String? userAddressId;
 
   final List<OrderDetail> orderDetails;
 
@@ -24,6 +25,7 @@ class Order {
     required this.status,
     required this.walletId,
     required this.cartId,
+    this.userAddressId,
     this.orderDetails = const [],
   });
 
@@ -37,28 +39,37 @@ class Order {
         .map(OrderDetail.fromJson)
         .toList();
 
+    String? _userAddressId() {
+      final v = j['userAddressId'] ?? j['user_address_id'];
+      if (v == null) return null;
+      final s = v.toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
     return Order(
-      orderId    : (j['orderId'] ?? '').toString(),
-      amount     : _int(j['amount']),
-      totalPrice : _double(j['totalPrice']),
-      updatedAt  : parseInstant(j['updatedAt']),
-      createdAt  : parseInstant(j['createdAt']),
-      status     : _int(j['status']),
-      walletId   : (j['walletId'] ?? '').toString(),
-      cartId     : (j['cartId'] ?? '').toString(),
-      orderDetails: details,
+      orderId      : (j['orderId'] ?? '').toString(),
+      amount       : _int(j['amount']),
+      totalPrice   : _double(j['totalPrice']),
+      updatedAt    : parseInstant(j['updatedAt']),
+      createdAt    : parseInstant(j['createdAt']),
+      status       : _int(j['status']),
+      walletId     : (j['walletId'] ?? '').toString(),
+      cartId       : (j['cartId'] ?? '').toString(),
+      userAddressId: _userAddressId(),
+      orderDetails : details,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'orderId'    : orderId,
-    'amount'     : amount,
-    'totalPrice' : totalPrice,
-    'updatedAt'  : updatedAt?.toIso8601String(),
-    'createdAt'  : createdAt?.toIso8601String(),
-    'status'     : status,
-    'walletId'   : walletId,
-    'cartId'     : cartId,
-    'orderDetails': orderDetails.map((e) => e.toJson()).toList(),
+    'orderId'      : orderId,
+    'amount'       : amount,
+    'totalPrice'   : totalPrice,
+    'updatedAt'    : updatedAt?.toIso8601String(),
+    'createdAt'    : createdAt?.toIso8601String(),
+    'status'       : status,
+    'walletId'     : walletId,
+    'cartId'       : cartId,
+    if (userAddressId != null) 'userAddressId': userAddressId,
+    'orderDetails' : orderDetails.map((e) => e.toJson()).toList(),
   };
 }

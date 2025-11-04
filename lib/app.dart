@@ -3,8 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sep490_mobile/page/blog/blog_detail_page.dart';
 import 'package:sep490_mobile/page/book/book_detail_page.dart';
+import 'package:sep490_mobile/page/order/checkout_page.dart';
+import 'package:sep490_mobile/page/order/order_detail_page.dart';
+import 'package:sep490_mobile/page/order/order_pending_page.dart';
+import 'package:sep490_mobile/page/order/order_processing_page.dart';
 import 'package:sep490_mobile/page/profile/edit_address_page.dart';
+import 'package:sep490_mobile/page/profile/location_page.dart';
+import 'package:sep490_mobile/page/wallet/wallet_coin_page.dart';
 import 'package:sep490_mobile/page/scan_page.dart';
+import 'package:sep490_mobile/page/wallet/wallet_money_page.dart';
 import 'provider.dart';
 
 import 'page/home_page.dart';
@@ -32,7 +39,7 @@ class MyApp extends StatelessWidget {
         GoRoute(path: '/booklist', name: 'booklist', builder: (_, __) => const BookListPage()),
         GoRoute(path: '/blogs',   name: 'blogs',   builder: (_, __) => const BlogPage()),
         //GoRoute(path: '/library', name: 'library', builder: (_, __) => const LibraryPage()),
-        //GoRoute(path: '/cart',    name: 'cart',    builder: (_, __) => const CartPage()),
+        GoRoute(path: '/cart',    name: 'cart',    builder: (_, __) => const CartPage()),
         GoRoute(path: '/scan', builder: (_, __) => const ScanPage(),),
         GoRoute(path: '/forgot_password',    builder: (_, __) => const ForgotPasswordPage()),
         GoRoute(path: '/account/edit', builder: (_, __) => const EditProfilePage()),
@@ -50,6 +57,17 @@ class MyApp extends StatelessWidget {
         GoRoute(path: '/address/edit', builder: (_, state) => EditAddressPage(args: state.extra as EditAddressArgs),),
         GoRoute(path: '/address/create', builder: (_, __) => const CreateAddressPage(),),
         GoRoute(path: '/blogs/:id', builder: (context, state) => BlogDetailPage(blogId: state.pathParameters['id']!),),
+        GoRoute(path: '/location', builder: (ctx, st) {
+            final uid = st.extra as String;
+            return LocationPage(userId: uid);
+          },
+        ),
+        GoRoute(path: '/wallet/coin', builder: (_, __) => const WalletCoinPage()),
+        GoRoute(path: '/wallet/money', builder: (_, __) => const WalletMoneyPage()),
+        GoRoute(path: '/checkout', builder: (ctx, st) => const CheckoutPage(),),
+        GoRoute(path: '/orders/pending', builder: (ctx, st) => const OrderPendingPage(),),
+        GoRoute(path: '/orders/processing', builder: (ctx, st) => const OrderProcessingPage(),),
+        GoRoute(path: '/orders/detail/:orderId', builder: (ctx, st) {final oid = st.pathParameters['orderId'] ?? '';return OrderDetailPage(orderId: oid);},),
       ],
     );
 

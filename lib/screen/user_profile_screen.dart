@@ -93,8 +93,13 @@ class UserProfileSection extends ConsumerWidget {
               ),
               _OptionTile(
                 iconUrl: '$_gsIconBase/wallet.png',
-                title: 'Ví của bạn',
-                routeName: '/wallet',
+                title: 'Ví tiền của bạn',
+                routeName: '/wallet/money',
+              ),
+              _OptionTile(
+                iconUrl: '$_gsIconBase/coin-bag.png',
+                title: 'Túi xu của bạn',
+                routeName: '/wallet/coin',
               ),
             ],
           ),
@@ -124,11 +129,27 @@ class _OrderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: const [
-        _OrderAction(title: 'Chờ xác nhận', iconUrl: '$_gsIconBase/pending.png'),
-        _OrderAction(title: 'Vận chuyển',   iconUrl: '$_gsIconBase/shipping.png'),
-        _OrderAction(title: 'Hoàn thành',   iconUrl: '$_gsIconBase/done.png'),
-        _OrderAction(title: 'Đã hủy',       iconUrl: '$_gsIconBase/cancel.png'),
+      children: [
+        _OrderAction(
+          title: 'Chờ xác nhận',
+          iconUrl: '$_gsIconBase/pending.png',
+          routeName: '/orders/pending',
+        ),
+        _OrderAction(
+          title: 'Chờ lấy hàng',
+          iconUrl: '$_gsIconBase/process.png',
+          routeName: '/orders/processing',
+        ),
+        _OrderAction(
+          title: 'Vận chuyển',
+          iconUrl: '$_gsIconBase/shipping.png',
+          routeName: '/orders/shipping',
+        ),
+        _OrderAction(
+          title: 'Hoàn thành',
+          iconUrl: '$_gsIconBase/done.png',
+          routeName: '/orders/done',
+        ),
       ],
     );
   }
@@ -167,26 +188,52 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _OrderAction extends StatelessWidget {
-  final String iconUrl; // gs://
+  final String iconUrl;
   final String title;
-  const _OrderAction({required this.iconUrl, required this.title});
+  final String? routeName;
+
+  const _OrderAction({
+    required this.iconUrl,
+    required this.title,
+    this.routeName,
+  });
+
+  void _handleTap(BuildContext context) {
+    final route = routeName;
+    if (route == null || route.isEmpty) return;
+
+    final go = GoRouter.maybeOf(context);
+    if (go != null) {
+      go.go(route);
+    } else {
+      Navigator.of(context).pushNamed(route);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: const Color(0x203F5BFF),
-            borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      onTap: () => _handleTap(context),
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: const Color(0x203F5BFF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(8),
+            child: GsImage(url: iconUrl, fit: BoxFit.contain),
           ),
-          padding: const EdgeInsets.all(8),
-          child: GsImage(url: iconUrl, fit: BoxFit.contain),
-        ),
-        const SizedBox(height: 8),
-        Text(title, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+        ],
+      ),
     );
   }
 }

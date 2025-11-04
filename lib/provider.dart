@@ -2,15 +2,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:sep490_mobile/repository/address_repository.dart';
 import 'package:sep490_mobile/repository/blog_repository.dart';
+import 'package:sep490_mobile/repository/cart_item_repository.dart';
+import 'package:sep490_mobile/repository/cart_repository.dart';
 import 'package:sep490_mobile/repository/genre_repository.dart';
+import 'package:sep490_mobile/repository/order_detail_repository.dart';
+import 'package:sep490_mobile/repository/order_repository.dart';
+import 'package:sep490_mobile/repository/payment_repository.dart';
 import 'package:sep490_mobile/repository/vn_location_repository.dart';
+import 'package:sep490_mobile/repository/wallet_repository.dart';
 import 'core/config.dart';
 import 'core/api_client.dart';
 import 'core/secure_store.dart';
 import 'model/blog.dart';
+import 'model/book.dart';
+import 'model/cart.dart';
+import 'model/cart_item.dart';
 import 'model/genre.dart';
+import 'model/order.dart';
+import 'model/order_detail.dart';
 import 'model/user_address.dart';
 import 'model/vn_location.dart';
+import 'model/wallet.dart';
 import 'repository/auth_repository.dart';
 import 'repository/book_repository.dart';
 import 'repository/user_repository.dart';
@@ -63,9 +75,18 @@ final roleByIdProvider = FutureProvider.family<Role, String>((ref, id) {
 ///BookRepository
 final bookRepoProvider  = Provider<BookRepository>((ref) => BookRepository(ref.watch(dioProvider)));
 
+// Lấy 1 sách theo id
+final bookByIdProvider = FutureProvider.family<Book, String>((ref, id) async {
+  return ref.read(bookRepoProvider).getById(id);
+});
+
 ///AddressRepository
 final addressRepoProvider =
 Provider<AddressRepository>((ref) => AddressRepository(ref.read(dioProvider)));
+
+final addressByIdProvider = FutureProvider.family<UserAddress?, String>((ref, id) async {
+  return ref.read(addressRepoProvider).getOne(id);
+});
 
 // Danh sách địa chỉ theo userId
 final addressesByUserProvider =
@@ -107,3 +128,48 @@ final genresProvider = FutureProvider<List<Genre>>((ref) async {
   final repo = ref.watch(genreRepoProvider);
   return repo.list();
 });
+
+///CartRepository
+final cartRepoProvider     = Provider((ref) => CartRepository(ref.read(dioProvider)));
+final cartItemRepoProvider = Provider((ref) => CartItemRepository(ref.read(dioProvider)));
+
+final cartByUserProvider = FutureProvider.family<Cart?, String>((ref, userId) {
+  return ref.read(cartRepoProvider).getByUserId(userId);
+});
+
+final cartItemsByCartProvider = FutureProvider.family<List<CartItem>, String>((ref, cartId) {
+  return ref.read(cartItemRepoProvider).listByCart(cartId);
+});
+
+///WalletRepository
+final walletRepoProvider = Provider<WalletRepository>(
+      (ref) => WalletRepository(ref.read(dioProvider)),
+);
+
+//Lấy ví theo user
+final walletByUserProvider = FutureProvider.family<Wallet?, String>((ref, userId) async {
+  return ref.read(walletRepoProvider).getByUserId(userId);
+});
+
+
+///OrderRepository
+final orderRepoProvider = Provider<OrderRepository>(
+      (ref) => OrderRepository(ref.read(dioProvider)),
+);
+
+final orderDetailRepoProvider = Provider<OrderDetailRepository>(
+      (ref) => OrderDetailRepository(ref.read(dioProvider)),
+);
+
+final orderByIdProvider = FutureProvider.family<Order, String>((ref, id) async {
+  return ref.read(orderRepoProvider).getById(id);
+});
+
+final orderDetailsByOrderProvider = FutureProvider.family<List<OrderDetail>, String>((ref, oid) async {
+  return ref.read(orderDetailRepoProvider).listByOrder(oid);
+});
+
+///PaymentRepository
+final paymentRepoProvider = Provider<PaymentRepository>(
+      (ref) => PaymentRepository(ref.read(dioProvider)),
+);
