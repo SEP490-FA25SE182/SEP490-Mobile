@@ -87,4 +87,30 @@ class BookRepository {
     }
   }
 
+  Future<List<Book>> getBooksByShelfId(String shelfId, {int page = 0, int size = 20, List<String>? sort}) async {
+    try {
+      final queryParams = {
+        'page': page.toString(),
+        'size': size.toString(),
+        if (sort != null && sort.isNotEmpty) 'sort': sort,
+      };
+
+      final res = await _dio.get(
+        '/api/rookie/users/books/bookshelves/$shelfId',
+        queryParameters: queryParams,
+      );
+
+      final data = res.data;
+      if (data is Map<String, dynamic>) {
+        final content = data['content'] as List? ?? [];
+        return content.map((e) => Book.fromJson(e as Map<String, dynamic>)).toList();
+      }
+
+      return const <Book>[];
+    } on DioException catch (e) {
+      mapDioError(e);
+      rethrow;
+    }
+  }
+
 }

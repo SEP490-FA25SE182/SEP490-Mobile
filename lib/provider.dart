@@ -183,10 +183,29 @@ final bookshelveRepoProvider = Provider<BookshelveRepository>((ref) {
   return BookshelveRepository(dio);
 });
 
-final bookshelvesProvider = FutureProvider.family<List<Bookshelve>, String>((ref, userId) {
+// trạng thái tìm kiếm (Bookshelve)
+final bookshelveSearchProvider = StateProvider<String>((_) => '');
+
+// provider family: input = userId
+final bookshelvesProvider = FutureProvider.family<List<Bookshelve>, String>((ref, userId) async {
   final repo = ref.watch(bookshelveRepoProvider);
-  return repo.listByUser(userId);
+  final q = ref.watch(bookshelveSearchProvider);
+  // gọi repo với q nếu có
+  return repo.listByUser(
+    userId: userId,
+    page: 0,
+    size: 10,
+    searchQuery: q.isNotEmpty ? q : null,
+    sort: ['createdAt-desc'],
+  );
 });
+
+final booksByShelfProvider = FutureProvider.family<List<Book>, String>((ref, shelfId) async {
+  final repo = ref.watch(bookRepoProvider);
+  return repo.getBooksByShelfId(shelfId, sort: ['createdAt-desc']);
+});
+
+
 
 final notificationRepoProvider = Provider<NotificationRepository>((ref) {
   final dio = ref.watch(dioProvider);
