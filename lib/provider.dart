@@ -180,12 +180,14 @@ final paymentRepoProvider = Provider<PaymentRepository>(
       (ref) => PaymentRepository(ref.read(dioProvider)),
 );
 
+
+//Bookshelve
 final bookshelveRepoProvider = Provider<BookshelveRepository>((ref) {
   final dio = ref.watch(dioProvider);
   return BookshelveRepository(dio);
 });
 
-//Bookshelve
+
 final bookshelveSearchProvider = StateProvider<String>((_) => '');
 
 // provider family: input = userId
@@ -206,7 +208,20 @@ final booksByShelfProvider = FutureProvider.family<List<Book>, String>((ref, she
   return repo.getBooksByShelfId(shelfId, sort: ['createdAt-desc']);
 });
 
+// Check if book in favorite shelf
+final isBookInFavoriteProvider =
+FutureProvider.family<bool, (String userId, String bookId)>((ref, args) async {
+  final (userId, bookId) = args;
+  final repo = ref.read(bookshelveRepoProvider);
+  return repo.isBookInFavorite(userId, bookId);
+});
 
+/// Genres by book provider
+final genresByBookProvider =
+FutureProvider.family<List<Genre>, String>((ref, bookId) async {
+  final repo = ref.read(genreRepoProvider);
+  return repo.listByBook(bookId: bookId);
+});
 
 final notificationRepoProvider = Provider<NotificationRepository>((ref) {
   final dio = ref.watch(dioProvider);
