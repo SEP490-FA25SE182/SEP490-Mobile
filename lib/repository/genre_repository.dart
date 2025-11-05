@@ -6,7 +6,7 @@ class GenreRepository {
   final Dio _dio;
   GenreRepository(this._dio);
 
-  /// Lấy danh sách tất cả thể loại
+
   Future<List<Genre>> list({
     int page = 0,
     int size = 50,
@@ -24,14 +24,10 @@ class GenreRepository {
 
       final data = res.data;
 
-      // Trường hợp backend trả về List
       if (data is List) {
-        return data
-            .map((e) => Genre.fromJson(e as Map<String, dynamic>))
-            .toList();
+        return data.map((e) => Genre.fromJson(e as Map<String, dynamic>)).toList();
       }
 
-      // Trường hợp backend trả về Page object
       if (data is Map<String, dynamic>) {
         final list = (data['content'] as List? ?? [])
             .map((e) => Genre.fromJson(e as Map<String, dynamic>))
@@ -46,7 +42,7 @@ class GenreRepository {
     }
   }
 
-  /// Lấy thông tin chi tiết 1 thể loại theo ID
+
   Future<Genre> getById(String id) async {
     try {
       final res = await _dio.get('/api/rookie/genres/$id');
@@ -60,4 +56,49 @@ class GenreRepository {
       rethrow;
     }
   }
+
+
+  Future<List<Genre>> listByBook({
+    required String bookId,
+    int page = 0,
+    int size = 20,
+    List<String>? sort,
+    String? keyword,
+  }) async {
+    try {
+      final res = await _dio.get(
+        '/api/rookie/users/genres',
+        queryParameters: {
+          'page': page,
+          'size': size,
+          if (sort != null && sort.isNotEmpty) 'sort': sort,
+          if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
+          'bookId': bookId,
+        },
+      );
+
+      final data = res.data;
+
+      if (data is Map<String, dynamic>) {
+        final list = (data['content'] as List? ?? [])
+            .whereType<Map<String, dynamic>>()
+            .map(Genre.fromJson)
+            .toList();
+        return list;
+      }
+
+      if (data is List) {
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map(Genre.fromJson)
+            .toList();
+      }
+
+      return const <Genre>[];
+    } on DioException catch (e) {
+      mapDioError(e);
+      rethrow;
+    }
+  }
+
 }
