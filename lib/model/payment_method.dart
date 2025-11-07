@@ -6,8 +6,8 @@ class PaymentMethod {
   final String paymentMethodId;
   final String? methodName;
   final String? provider;
-  final String? decription;          // giữ đúng key BE
-  final DateTime? createdAt;         // Instant
+  final String? decription;
+  final DateTime? createdAt;
   final IsActived isActived;
 
   const PaymentMethod({

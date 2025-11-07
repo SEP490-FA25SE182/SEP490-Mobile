@@ -8,12 +8,15 @@ import 'package:sep490_mobile/repository/comment_repository.dart';
 import 'package:sep490_mobile/repository/genre_repository.dart';
 import 'package:sep490_mobile/repository/order_detail_repository.dart';
 import 'package:sep490_mobile/repository/order_repository.dart';
+import 'package:sep490_mobile/repository/payment_method_repository.dart';
 import 'package:sep490_mobile/repository/payment_repository.dart';
 import 'package:sep490_mobile/repository/bookshelve_repository.dart';
 import 'package:sep490_mobile/repository/genre_repository.dart';
 import 'package:sep490_mobile/repository/notification_repository.dart';
+import 'package:sep490_mobile/repository/transaction_repository.dart';
 import 'package:sep490_mobile/repository/vn_location_repository.dart';
 import 'package:sep490_mobile/repository/wallet_repository.dart';
+import 'package:sep490_mobile/util/trans_type.dart';
 import 'core/config.dart';
 import 'core/api_client.dart';
 import 'core/secure_store.dart';
@@ -26,6 +29,8 @@ import 'model/comment.dart';
 import 'model/genre.dart';
 import 'model/order.dart';
 import 'model/order_detail.dart';
+import 'model/payment_method.dart';
+import 'model/transaction.dart';
 import 'model/user_address.dart';
 import 'model/vn_location.dart';
 import 'model/wallet.dart';
@@ -62,6 +67,7 @@ final userByIdProvider = FutureProvider.family<User, String>((ref, id) {
 });
 // Lưu userId hiện tại sau khi login (null = khách)
 final currentUserIdProvider = StateProvider<String?>((_) => null);
+
 // Xoá cache user theo id (sau logout)
 void invalidateUserCache(WidgetRef ref, String? userId) {
   if (userId != null && userId.isNotEmpty) {
@@ -241,4 +247,46 @@ FutureProvider.family<int, String>((ref, blogId) {
 final commentsByBlogProvider =
 FutureProvider.family<List<Comment>, String>((ref, blogId) {
   return ref.read(commentRepoProvider).getByBlogId(blogId);
+});
+
+///TransactionRepository
+final transactionRepoProvider = Provider<TransactionRepository>(
+      (ref) => TransactionRepository(ref.read(dioProvider)),
+);
+
+// Search theo orderId và PAYMENT
+final transactionByOrderProvider =
+FutureProvider.family<Transaction?, String>((ref, oid) async {
+  final page = await ref.read(transactionRepoProvider).search(
+    orderId: oid,
+    transType: TransactionType.PAYMENT,
+    page: 0,
+    size: 1,
+    sort: const ['createdAt,desc'],
+  );
+  return page.content.isEmpty ? null : page.content.first;
+});
+
+// Search theo orderId và REFUND
+final transactionRefundByOrderProvider =
+FutureProvider.family<Transaction?, String>((ref, oid) async {
+  final page = await ref.read(transactionRepoProvider).search(
+    orderId: oid,
+    transType: TransactionType.REFUND,
+    page: 0,
+    size: 1,
+    sort: const ['createdAt,desc'],
+  );
+  return page.content.isEmpty ? null : page.content.first;
+});
+
+///PaymentMethodRepository
+final paymentMethodRepoProvider = Provider<PaymentMethodRepository>(
+      (ref) => PaymentMethodRepository(ref.read(dioProvider)),
+);
+
+final paymentMethodByIdProvider =
+FutureProvider.family<PaymentMethod?, String?>((ref, pmId) async {
+  if (pmId == null || pmId.isEmpty) return null;
+  return ref.read(paymentMethodRepoProvider).getById(pmId);
 });

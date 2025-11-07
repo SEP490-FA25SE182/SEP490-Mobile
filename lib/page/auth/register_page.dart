@@ -20,8 +20,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _emailCtrl    = TextEditingController();
   final _phoneCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
 
   bool _showPwd = false;
+  bool _showConfirm = false;
+  String? _pwdError;
   bool _asAuthor = false;
   bool _loading = false;
 
@@ -35,7 +38,23 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _emailCtrl.dispose();
     _phoneCtrl.dispose();
     _passwordCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
+  }
+
+  void _validatePasswords() {
+    final p1 = _passwordCtrl.text;
+    final p2 = _confirmCtrl.text;
+
+    setState(() {
+      if (p2.isEmpty) {
+        _pwdError = null;
+      } else if (p1 != p2) {
+        _pwdError = 'Mật khẩu nhập lại không khớp';
+      } else {
+        _pwdError = null;
+      }
+    });
   }
 
   Future<void> _doRegister() async {
@@ -58,6 +77,28 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         password: _passwordCtrl.text,
         roleId: roleId,
       );
+
+      if (_passwordCtrl.text.isEmpty || _confirmCtrl.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vui lòng nhập và xác nhận mật khẩu')),
+        );
+        return;
+      }
+      if (_passwordCtrl.text != _confirmCtrl.text) {
+        setState(() => _pwdError = 'Mật khẩu nhập lại không khớp');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mật khẩu nhập lại không khớp')),
+        );
+        return;
+      }
+
+      // nếu mọi thứ OK thì tiếp tục:
+      setState(() => _loading = true);
+      try {
+        // TODO: gọi API đăng ký
+      } finally {
+        if (mounted) setState(() => _loading = false);
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -206,6 +247,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             child: TextField(
                               controller: _passwordCtrl,
                               obscureText: !_showPwd,
+                              onChanged: (_) => _validatePasswords(),
                               decoration: const InputDecoration(
                                 hintText: 'Nhập mật khẩu của bạn',
                                 border: InputBorder.none,
@@ -228,6 +270,50 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     ),
 
                     const SizedBox(height: 16),
+
+                    const SizedBox(height: 12),
+
+                    // Confirm Password
+                    const Text('Nhập lại password',
+                        style: TextStyle(color: Colors.white70)),
+                    const SizedBox(height: 6),
+                    InputFieldBox(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _confirmCtrl,
+                              obscureText: !_showConfirm,
+                              onChanged: (_) => _validatePasswords(),
+                              decoration: const InputDecoration(
+                                hintText: 'Nhập lại mật khẩu',
+                                border: InputBorder.none,
+                              ),
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => setState(() => _showConfirm = !_showConfirm),
+                            child: SizedBox(
+                              width: 26, height: 26,
+                              child: GsImage(
+                                url: _showConfirm ? _hideIcon : _viewIcon,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Hiển thị lỗi không khớp
+                    if (_pwdError != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        _pwdError!,
+                        style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                      ),
+                    ],
 
                     // Checkbox author
                     Row(

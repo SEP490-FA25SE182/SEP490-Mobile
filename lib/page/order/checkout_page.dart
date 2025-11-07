@@ -19,7 +19,7 @@ class CheckoutArgs {
   const CheckoutArgs({required this.orderId});
 }
 
-enum _PayMethod { payos, cod }
+enum _PayMethod { payos, cod, wallet }
 
 class CheckoutPage extends ConsumerStatefulWidget {
   const CheckoutPage({super.key});
@@ -50,6 +50,11 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     final detailsAsync = (orderId.isEmpty)
         ? const AsyncValue<List<OrderDetail>>.data(<OrderDetail>[])
         : ref.watch(orderDetailsByOrderProvider(orderId));
+
+    // ví Rookies theo user hiện tại
+    final walletAsync = (userId == null || userId.isEmpty)
+        ? const AsyncValue<dynamic>.data(null)
+        : ref.watch(walletByUserProvider(userId));
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -111,23 +116,88 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                           'Phương thức thanh toán',
                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
                         ),
+                        const SizedBox(height: 6),
+                        Container(height: 1, color: Colors.white24),
                         const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            _RadioRow(
-                              label: 'Ví PayOS',
-                              value: _PayMethod.payos,
-                              group: _method,
-                              onChanged: (v) => setState(() => _method = v),
-                            ),
-                            const SizedBox(width: 12),
-                            _RadioRow(
-                              label: 'Thanh toán khi nhận hàng',
-                              value: _PayMethod.cod,
-                              group: _method,
-                              onChanged: (v) => setState(() => _method = v),
-                            ),
-                          ],
+
+                        // render radios phụ thuộc tổng tiền (order)
+                        orderAsync.when(
+                          loading: () => const LinearProgressIndicator(minHeight: 2),
+                          error: (e, _) => Text(
+                            'Lỗi tải đơn: $e',
+                            style: const TextStyle(color: Colors.redAccent),
+                          ),
+                          data: (order) {
+                            final total = order.totalPrice;
+
+                            // PayOS + COD row
+                            final basicRows = Row(
+                              children: [
+                                Expanded(
+                                  child: _RadioRow(
+                                    label: 'Ví PayOS',
+                                    value: _PayMethod.payos,
+                                    group: _method,
+                                    onChanged: (v) => setState(() => _method = v),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _RadioRow(
+                                    label: 'Thanh toán khi nhận hàng',
+                                    value: _PayMethod.cod,
+                                    group: _method,
+                                    onChanged: (v) => setState(() => _method = v),
+                                  ),
+                                ),
+                              ],
+                            );
+
+                            // Wallet row
+                            final walletRow = walletAsync.when<Widget>(
+                              loading: () => const SizedBox(height: 26),
+                              error: (e, _) => Text('Lỗi ví: $e', style: const TextStyle(color: Colors.redAccent)),
+                              data: (wallet) {
+                                final balance = (wallet?.balance ?? 0.0) as double;
+                                final canUse = balance >= total;
+                                final label = 'Ví Rookies, số dư: ${_fmtVnd(balance)}';
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _RadioRow(
+                                      label: label,
+                                      value: _PayMethod.wallet,
+                                      group: _method,
+                                      onChanged: (v) {
+                                        if (!canUse) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Số dư không đủ')),
+                                          );
+                                          return;
+                                        }
+                                        setState(() => _method = v);
+                                      },
+                                      disabled: !canUse,
+                                    ),
+                                    if (!canUse)
+                                      const Padding(
+                                        padding: EdgeInsets.only(left: 44),
+                                        child: Text('Số dư không đủ', style: TextStyle(color: Colors.redAccent)),
+                                      ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            return Column(
+                              children: [
+                                basicRows,
+                                const SizedBox(height: 6),
+                                walletRow,
+                              ],
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 16),
@@ -140,19 +210,43 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 8),
-                        orderAsync.when(
+
+                        // Tính "Tiền hàng" + "Tiết kiệm"
+                        detailsAsync.when(
                           loading: () => const Padding(
                             padding: EdgeInsets.symmetric(vertical: 12),
                             child: LinearProgressIndicator(minHeight: 2),
                           ),
-                          error: (e, _) => Text(
-                            'Lỗi tải đơn: $e',
-                            style: const TextStyle(color: Colors.redAccent),
-                          ),
-                          data: (order) => _RowKV(
-                            left: 'Tổng thanh toán',
-                            right: _fmtVnd(order.totalPrice),
-                          ),
+                          error: (e, _) => Text('Lỗi chi tiết: $e',
+                              style: const TextStyle(color: Colors.redAccent)),
+                          data: (details) {
+                            final subtotal = details.fold<num>(
+                              0,
+                                  (sum, d) => sum + d.quantity * d.price,
+                            );
+
+                            return orderAsync.when(
+                              loading: () => const SizedBox.shrink(),
+                              error: (_, __) => const SizedBox.shrink(),
+                              data: (order) {
+                                final save = subtotal - order.totalPrice;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _RowKV(left: 'Tiền hàng', right: _fmtVnd(subtotal.toDouble())),
+                                    if (save > 0.0001)
+                                      _RowKV(left: 'Tiết kiệm', right: _fmtVnd(save.toDouble())),
+                                    const SizedBox(height: 10),
+                                    const Divider(color: Colors.white24, height: 16),
+                                    _RowKV(
+                                      left: 'Tổng thanh toán',
+                                      right: _fmtVnd(order.totalPrice),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 20),
@@ -304,18 +398,17 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     setState(() => _placing = true);
     try {
       if (_method == _PayMethod.payos) {
-        // 1) Update order
+        // 1) Update order (địa chỉ)
         await ref.read(orderRepoProvider).update(
           order.orderId,
           userAddressId: addressId,
           status: order.status,
         );
 
-        // Tạo link PayOS + truyền returnUrl / cancelUrl
+        // 2) Tạo link PayOS
         final returnUrl = 'rookies://payment/success?orderId=${order.orderId}';
         final cancelUrl = 'rookies://payment/cancel?orderId=${order.orderId}';
 
-        // 2) Tạo link PayOS
         final res = await ref.read(paymentRepoProvider).createCheckout(
           order.orderId,
           returnUrl: returnUrl,
@@ -333,21 +426,70 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
             SnackBar(content: Text('Không mở được trình duyệt. Link: ${res.checkoutUrl}')),
           );
         }
-      } else {
-        // COD: chỉ cần cập nhật địa chỉ
+      } else if (_method == _PayMethod.cod) {
+        // COD: cập nhật địa chỉ + tạo Transaction
         await ref.read(orderRepoProvider).update(
           order.orderId,
           userAddressId: addressId,
           status: order.status,
         );
 
+        await ref.read(transactionRepoProvider).createCOD(
+          totalPrice: order.totalPrice,
+          status: 0,
+          orderId: order.orderId,
+        );
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đặt hàng thành công')),
         );
-
-        // Điều hướng sang danh sách "Chờ xác nhận"
         context.go('/orders/pending');
+      } else if (_method == _PayMethod.wallet) {
+        // Ví Rookies: phải đủ số dư
+        final me = ref.read(currentUserIdProvider);
+        if (me == null || me.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Bạn cần đăng nhập để dùng ví Rookies')),
+          );
+          return;
+        }
+
+        final wallet = await ref.read(walletRepoProvider).getByUserId(me);
+        final balance = wallet?.balance ?? 0.0;
+        if (wallet == null || balance < order.totalPrice) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Số dư ví không đủ')),
+          );
+          return;
+        }
+
+        // 1) cập nhật địa chỉ
+        await ref.read(orderRepoProvider).update(
+          order.orderId,
+          userAddressId: addressId,
+          status: 2,
+        );
+
+        // 2) tạo transaction qua ví
+        await ref.read(transactionRepoProvider).createWallet(
+          totalPrice: order.totalPrice,
+          status: 3,
+          orderId: order.orderId,
+        );
+
+        // 3) trừ số dư
+        final newBalance = balance - order.totalPrice;
+        await ref.read(walletRepoProvider).update(
+          wallet.walletId,
+          balance: newBalance,
+        );
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Thanh toán bằng Ví Rookies thành công')),
+        );
+        context.go('/orders/processing');
       }
     } on DioException catch (e) {
       final sc = e.response?.statusCode;
@@ -377,37 +519,45 @@ class _RadioRow extends StatelessWidget {
   final _PayMethod value;
   final _PayMethod? group;
   final ValueChanged<_PayMethod?> onChanged;
+  final bool disabled;
 
   const _RadioRow({
     required this.label,
     required this.value,
     required this.group,
     required this.onChanged,
+    this.disabled = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: InkWell(
-        onTap: () => onChanged(value),
-        child: Row(
-          children: [
-            Radio<_PayMethod>(
-              value: value,
-              groupValue: group,
-              onChanged: onChanged,
-              visualDensity: VisualDensity.compact,
-              activeColor: const Color(0xFF5B6CF3),
+    final effectiveOnChanged = disabled ? null : onChanged;
+
+    return InkWell(
+      onTap: disabled ? null : () => effectiveOnChanged!(value),
+      child: Row(
+        children: [
+          Radio<_PayMethod>(
+            value: value,
+            groupValue: group,
+            onChanged: effectiveOnChanged,
+            visualDensity: VisualDensity.compact,
+            activeColor: const Color(0xFF5B6CF3),
+          ),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: disabled ? Colors.white38 : Colors.white70,
+              ),
             ),
-            Flexible(
-              child: Text(label, style: const TextStyle(color: Colors.white70)),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
+
 
 class _RowKV extends StatelessWidget {
   final String left;
