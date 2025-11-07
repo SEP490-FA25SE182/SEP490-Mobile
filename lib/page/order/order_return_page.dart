@@ -93,7 +93,7 @@ class OrderReturnPage extends ConsumerWidget {
                             orders: orders,
                             actionLabel: null,
                             onAction: (o) => context.push('/orders/detail/${o.orderId}'),
-                            onSeeMore: (o) => context.push('/orders/detail/${o.orderId}'),
+                            onSeeMore: (o) => context.push('/orders/refund/${o.orderId}'),
                           ),
                         );
                       },

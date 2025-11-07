@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sep490_mobile/page/blog/blog_detail_page.dart';
 import 'package:sep490_mobile/page/book/book_detail_page.dart';
 import 'package:sep490_mobile/page/order/checkout_page.dart';
+import 'package:sep490_mobile/page/order/detail_refund_page.dart';
 import 'package:sep490_mobile/page/order/feedback_page.dart';
 import 'package:sep490_mobile/page/order/order_cancel_page.dart';
 import 'package:sep490_mobile/page/order/order_delivered_page.dart';
@@ -110,6 +111,7 @@ GoRouter buildRouter() => GoRouter(
     GoRoute(path: '/orders/return/:orderId', builder: (ctx, st) => ReturnPage(orderId: st.pathParameters['orderId']!),),
     GoRoute(path: '/orders/feedback/:orderId', builder: (ctx, st) => FeedbackPage(orderId: st.pathParameters['orderId']!),),
     GoRoute(path: '/orders/detail/:orderId', builder: (ctx, st) => OrderDetailPage(orderId: st.pathParameters['orderId'] ?? ''),),
+    GoRoute(path: '/orders/refund/:orderId', builder: (ctx, st) => DetailRefundPage(orderId: st.pathParameters['orderId'] ?? ''),),
   ],
 );
 

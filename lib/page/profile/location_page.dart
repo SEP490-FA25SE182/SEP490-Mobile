@@ -135,7 +135,7 @@ class _LocationPageState extends ConsumerState<LocationPage> {
                             children: [
                               ...ordered.map((addr) => _AddressRow(
                                 addr: addr,
-                                selected: _selectedId == addr.userAddressId,
+                                selectedId: _selectedId,
                                 onSelect: () => setState(() {
                                   _selectedId = addr.userAddressId;
                                 }),
@@ -170,13 +170,13 @@ class _LocationPageState extends ConsumerState<LocationPage> {
 
 class _AddressRow extends StatelessWidget {
   final UserAddress addr;
-  final bool selected;
+  final String? selectedId;
   final VoidCallback onSelect;
   final VoidCallback onEdit;
 
   const _AddressRow({
     required this.addr,
-    required this.selected,
+    required this.selectedId,
     required this.onSelect,
     required this.onEdit,
   });
@@ -230,14 +230,15 @@ class _AddressRow extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          // Checkbox chọn địa chỉ
-                          Checkbox(
-                            value: selected,
+                          // Radio chọn địa chỉ
+                          Radio<String>(
+                            value: addr.userAddressId,
+                            groupValue: selectedId,
                             onChanged: (_) => onSelect(),
                             activeColor: const Color(0xFF5B6CF3),
-                            checkColor: Colors.white,
-                            side: const BorderSide(color: Colors.white54, width: 1),
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            fillColor: WidgetStateProperty.resolveWith(
+                                  (states) => const Color(0xFF5B6CF3),
+                            ),
                           ),
                         ],
                       ),

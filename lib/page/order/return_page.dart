@@ -6,6 +6,8 @@ import '../../provider.dart';
 import '../../model/order.dart';
 import '../../screen/order_status_screen.dart';
 import '../../style/button.dart';
+import '../../util/trans_type.dart' show TransactionType;
+
 
 enum _Situation { received, notReceived }
 
@@ -93,30 +95,35 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
                         const SizedBox(height: 16),
 
                         // ======= Lý do =======
+                        // ======= Lý do =======
                         Row(
                           children: [
                             const Expanded(
-                              child: Text('Lý do',
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                              child: Text(
+                                'Lý do',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                              ),
                             ),
-                            SizedBox(
-                              height: 36,
+                            // Nút chọn lý do hiển thị nội dung đã chọn
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 36, minWidth: 160, maxWidth: 300),
                               child: OutlinedButton(
                                 style: OutlinedButton.styleFrom(
                                   side: const BorderSide(color: Colors.white38),
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 ),
                                 onPressed: _pickReason,
-                                child: const Text('Chọn lý do >'),
+                                child: Text(
+                                  _reason ?? 'Chọn lý do >>',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        if ((_reason ?? '').isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(_reason!, style: const TextStyle(color: Colors.white70)),
-                        ],
 
                         const SizedBox(height: 24),
 
@@ -223,17 +230,27 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
 
     setState(() => _busy = true);
     try {
+      // 1) Cập nhật Order -> RETURNED + reason
       await ref.read(orderRepoProvider).update(
         order.orderId,
         status: 6,
         reason: reasonText,
       );
 
+      // 2) Tạo Transaction REFUND
+      await ref.read(transactionRepoProvider).createWallet(
+        totalPrice: order.totalPrice,
+        status: 0,
+        orderId: order.orderId,
+        transType: TransactionType.REFUND,
+      );
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã gửi yêu cầu')),
       );
-      // Điều hướng sau khi gửi:
+
+      // Điều hướng sau khi gửi
       context.go('/orders/return');
     } catch (e) {
       if (!mounted) return;

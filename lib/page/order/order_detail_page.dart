@@ -219,6 +219,10 @@ class OrderDetailPage extends ConsumerWidget {
                               order: order,
                               detailsAsync: dAsync,
                             ),
+
+                            const SizedBox(height: 16),
+                            // ========== Phương thức thanh toán ==========
+                            _PaymentMethodBox(order: order),
                           ],
                         );
                       },
@@ -295,3 +299,81 @@ class _RowKV extends StatelessWidget {
     );
   }
 }
+
+String _statusText(int s) {
+  switch (s) {
+    case 0: return 'Chưa thanh toán';
+    case 1: return 'Đang xử lý';
+    case 2: return 'Đã hủy';
+    case 3: return 'Đã thanh toán';
+    default: return 'Không rõ';
+  }
+}
+
+class _PaymentMethodBox extends ConsumerWidget {
+  final Order order;
+  const _PaymentMethodBox({required this.order});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tAsync = ref.watch(transactionByOrderProvider(order.orderId));
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white24, width: 1),
+        color: const Color(0x10FFFFFF),
+      ),
+      child: tAsync.when(
+        loading: () => const LinearProgressIndicator(minHeight: 2),
+        error: (e, _) => Text('Lỗi phương thức thanh toán: $e',
+            style: const TextStyle(color: Colors.redAccent)),
+        data: (tran) {
+          final pmAsync = ref.watch(
+            paymentMethodByIdProvider(tran?.paymentMethodId),
+          );
+
+          Widget _timeRow(String label, DateTime? dt) => _RowKV(
+            left: label,
+            right: dt == null ? '-' : _fmtDate(dt.toLocal()),
+          );
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Phương thức thanh toán',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 10),
+
+              // Phương thức (decription)
+              pmAsync.when(
+                loading: () => const _RowKV(left: 'Phương thức', right: '...'),
+                error: (e, _) => _RowKV(left: 'Phương thức', right: 'Lỗi: $e'),
+                data: (pm) => _RowKV(
+                  left: 'Phương thức',
+                  right: (pm?.decription?.trim().isNotEmpty ?? false)
+                      ? pm!.decription!
+                      : '-',
+                ),
+              ),
+
+              // Trạng thái từ Transaction.status
+              _RowKV(
+                left: 'Trạng thái',
+                right: tran == null ? '-' : _statusText(tran.status),
+              ),
+
+              const SizedBox(height: 10),
+              const Divider(color: Colors.white24, height: 16),
+
+              _timeRow('Thời gian đặt hàng', order.createdAt),
+              _timeRow('Thời gian thanh toán', tran?.updatedAt),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
