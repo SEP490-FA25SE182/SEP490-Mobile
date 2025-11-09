@@ -155,3 +155,53 @@ class _GradientButtonBase extends StatelessWidget {
     );
   }
 }
+
+// === Nút chọn nhanh số tiền (chip) ===
+class QuickAmountButton extends StatelessWidget {
+  final int amount;
+  final ValueChanged<int> onTap;
+  final EdgeInsetsGeometry padding;
+  final double borderRadius;
+  final bool dense;
+
+  const QuickAmountButton({
+    super.key,
+    required this.amount,
+    required this.onTap,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    this.borderRadius = 10,
+    this.dense = true,
+  });
+
+  static String _fmt(int v) {
+    final s = v.toString().replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+    );
+    return s;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(borderRadius),
+      onTap: () => onTap(amount),
+      child: Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: Border.all(color: Colors.white24, width: 1),
+          color: const Color(0x10FFFFFF),
+        ),
+        child: Text(
+          _fmt(amount),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: dense ? 14 : 16,
+          ),
+        ),
+      ),
+    );
+  }
+}

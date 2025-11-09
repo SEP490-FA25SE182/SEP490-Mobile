@@ -163,6 +163,9 @@ final walletByUserProvider = FutureProvider.family<Wallet?, String>((ref, userId
   return ref.read(walletRepoProvider).getByUserId(userId);
 });
 
+final walletByIdProvider = FutureProvider.family<Wallet?, String>((ref, wid) async {
+  return ref.read(walletRepoProvider).getById(wid);
+});
 
 ///OrderRepository
 final orderRepoProvider = Provider<OrderRepository>(
@@ -278,6 +281,18 @@ FutureProvider.family<Transaction?, String>((ref, oid) async {
     sort: const ['createdAt,desc'],
   );
   return page.content.isEmpty ? null : page.content.first;
+});
+
+// Lịch sử giao dịch theo walletId
+final transactionsByWalletProvider =
+FutureProvider.family.autoDispose<List<Transaction>, String>((ref, wid) async {
+  final page = await ref.read(transactionRepoProvider).search(
+    walletId: wid,
+    page: 0,
+    size: 200,
+    sort: const ['updatedAt,desc'],
+  );
+  return page.content;
 });
 
 ///PaymentMethodRepository

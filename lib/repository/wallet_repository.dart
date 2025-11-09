@@ -18,6 +18,15 @@ class WalletRepository {
     }
   }
 
+  Future<Wallet?> getById(String walletId) async {
+    try {
+      final res = await _dio.get('/api/rookie/users/wallets/$walletId');
+      return Wallet.fromJson((res.data as Map).cast<String, dynamic>());
+    } on DioException {
+      return null;
+    }
+  }
+
   /// POST /api/rookie/users/wallets
   Future<Wallet> createOne({required String userId, int coin = 0, double balance = 0}) async {
     final body = [

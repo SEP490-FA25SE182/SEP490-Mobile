@@ -25,6 +25,7 @@ class OrderRepository {
 
   Future<Order> getById(String id) async {
     final res = await _dio.get('/api/rookie/users/orders/$id');
+    print(res.data);
     return Order.fromJson((res.data as Map).cast<String, dynamic>());
   }
 

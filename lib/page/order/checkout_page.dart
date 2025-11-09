@@ -476,6 +476,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
           totalPrice: order.totalPrice,
           status: 3,
           orderId: order.orderId,
+          walletId: wallet.walletId,
         );
 
         // 3) trừ số dư

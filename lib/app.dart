@@ -19,9 +19,12 @@ import 'package:sep490_mobile/page/order/payment_success_page.dart';
 import 'package:sep490_mobile/page/order/return_page.dart';
 import 'package:sep490_mobile/page/profile/edit_address_page.dart';
 import 'package:sep490_mobile/page/profile/location_page.dart';
+import 'package:sep490_mobile/page/wallet/deposit_page.dart';
 import 'package:sep490_mobile/page/wallet/wallet_coin_page.dart';
 import 'package:sep490_mobile/page/scan_page.dart';
+import 'package:sep490_mobile/page/wallet/wallet_help_page.dart';
 import 'package:sep490_mobile/page/wallet/wallet_money_page.dart';
+import 'package:sep490_mobile/page/wallet/withdraw_page.dart';
 import 'package:sep490_mobile/widget/deep_link_service.dart';
 import 'provider.dart';
 
@@ -93,6 +96,9 @@ GoRouter buildRouter() => GoRouter(
     GoRoute(path: '/location', builder: (ctx, st) => LocationPage(userId: st.extra as String)),
     GoRoute(path: '/wallet/coin', builder: (_, __) => const WalletCoinPage()),
     GoRoute(path: '/wallet/money', builder: (_, __) => const WalletMoneyPage()),
+    GoRoute(path: '/wallet/deposit/:walletId', builder: (context, st) => DepositPage(walletId: st.pathParameters['walletId']!),),
+    GoRoute(path: '/wallet/withdraw/:walletId', builder: (context, st) => WithdrawPage(walletId: st.pathParameters['walletId']!),),
+    GoRoute(path: '/wallet/help', builder: (context, st) => const WalletHelpPage(),),
     GoRoute(path: '/checkout', builder: (ctx, st) => const CheckoutPage()),
     GoRoute(
       path: '/payment/success',
