@@ -49,9 +49,15 @@ class Order {
     }
 
     String? _reason() {
-      final v = j['reason'];
-      if (v == null) return null;
-      final s = v.toString().trim();
+      final raw = j['reason'] ??
+          j['refundReason'] ??
+          j['cancelReason'] ??
+          j['rejectReason'] ??
+          j['note'] ??
+          j['refund_reason'] ??
+          j['cancel_reason'];
+      if (raw == null) return null;
+      final s = raw.toString().trim();
       return s.isEmpty ? null : s;
     }
 

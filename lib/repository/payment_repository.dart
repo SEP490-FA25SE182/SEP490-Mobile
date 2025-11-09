@@ -25,6 +25,25 @@ class PaymentRepository {
       (res.data as Map).cast<String, dynamic>(),
     );
   }
+
+  Future<CreateCheckoutResponse> deposit(
+      String walletId, {
+        required int amount,
+        String? returnUrl,
+        String? cancelUrl,
+      }) async {
+    final res = await _dio.post(
+      '/api/rookie/payments/wallets/$walletId/deposit',
+      queryParameters: <String, dynamic>{
+        'amount': amount,
+        if (returnUrl != null && returnUrl.isNotEmpty) 'returnUrl': returnUrl,
+        if (cancelUrl != null && cancelUrl.isNotEmpty) 'cancelUrl': cancelUrl,
+      },
+    );
+    return CreateCheckoutResponse.fromJson(
+      (res.data as Map).cast<String, dynamic>(),
+    );
+  }
 }
 
 

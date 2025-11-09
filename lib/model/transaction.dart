@@ -11,8 +11,9 @@ class Transaction {
   final DateTime? createdAt;
   final int status;
   final String paymentMethodId;
-  final String orderId;
+  final String? orderId;
   final int? orderCode;
+  final String? walletId;
   final IsActived isActived;
   final TransactionType transType;
 
@@ -23,7 +24,8 @@ class Transaction {
     this.createdAt,
     required this.status,
     required this.paymentMethodId,
-    required this.orderId,
+    this.orderId,
+    this.walletId,
     this.orderCode,
     this.isActived = IsActived.ACTIVE,
     this.transType = TransactionType.PAYMENT,
@@ -43,6 +45,7 @@ class Transaction {
       status         : _intN(j['status']) ?? 0,
       paymentMethodId: (j['paymentMethodId'] ?? '').toString(),
       orderId        : (j['orderId'] ?? '').toString(),
+      walletId        : (j['walletId'] ?? '').toString(),
       orderCode      : _intN(j['orderCode']),
       isActived      : parseIsActived(j['isActived']),
       transType      : parseTransactionType(j['transType']),
@@ -57,6 +60,7 @@ class Transaction {
     'status'         : status,
     'paymentMethodId': paymentMethodId,
     'orderId'        : orderId,
+    'walletId'        : walletId,
     'orderCode'      : orderCode,
     'isActived'      : isActived.name,
     'transType'      : transType.name,
@@ -70,6 +74,7 @@ class Transaction {
     int? status,
     String? paymentMethodId,
     String? orderId,
+    String? walletId,
     int? orderCode,
     IsActived? isActived,
     TransactionType? transType,
@@ -81,6 +86,7 @@ class Transaction {
     status: status ?? this.status,
     paymentMethodId: paymentMethodId ?? this.paymentMethodId,
     orderId: orderId ?? this.orderId,
+    walletId: walletId ?? this.walletId,
     orderCode: orderCode ?? this.orderCode,
     isActived: isActived ?? this.isActived,
     transType: transType ?? this.transType,
