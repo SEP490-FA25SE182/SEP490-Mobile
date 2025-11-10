@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../model/book.dart';
 import '../model/order.dart';
 import '../provider.dart';
 
@@ -106,6 +107,59 @@ class OrderRepository {
       options: Options(contentType: Headers.jsonContentType),
     );
     return Order.fromJson((res.data as Map).cast<String, dynamic>());
+  }
+
+
+  //======== getPurchasedBooks
+  Future<List<Book>> getPurchasedBooks(String userId) async {
+    try {
+      print('🔵 [OrderRepo] Fetching purchased books for user $userId');
+
+      final orders = await search(userId: userId);
+      print('🟩 [OrderRepo] Found ${orders.length} orders');
+
+      final Set<String> bookIds = {};
+
+      for (final order in orders) {
+        final orderId = order.orderId;
+        if (orderId == null) continue;
+
+        try {
+          final res = await _dio.get(
+            '/api/rookie/users/order/order-details/order/$orderId',
+          );
+          if (res.data is List) {
+            final details = res.data as List;
+            for (final detail in details) {
+              final bookId = detail['bookId'];
+              if (bookId != null) bookIds.add(bookId);
+            }
+          }
+        } catch (e) {
+          print('[OrderRepo] Error fetching details for order $orderId: $e');
+        }
+      }
+
+      print('[OrderRepo] Found ${bookIds.length} unique purchased book IDs');
+
+      final List<Book> books = [];
+      for (final id in bookIds) {
+        try {
+          final res = await _dio.get('/api/rookie/books/$id');
+          if (res.data is Map<String, dynamic>) {
+            books.add(Book.fromJson(res.data));
+          }
+        } catch (e) {
+          print('[OrderRepo] Could not fetch book $id: $e');
+        }
+      }
+
+      print('[OrderRepo] Returning ${books.length} purchased books');
+      return books;
+    } catch (e, st) {
+      print('[OrderRepo] Error fetching purchased books: $e\n$st');
+      return [];
+    }
   }
 
 

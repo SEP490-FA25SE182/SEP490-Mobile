@@ -305,3 +305,8 @@ FutureProvider.family<PaymentMethod?, String?>((ref, pmId) async {
   if (pmId == null || pmId.isEmpty) return null;
   return ref.read(paymentMethodRepoProvider).getById(pmId);
 });
+
+///OrderRepository
+final orderRepositoryProvider = Provider<OrderRepository>(
+      (ref) => OrderRepository(ref.read(dioProvider)),
+);
