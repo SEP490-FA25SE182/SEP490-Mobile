@@ -60,4 +60,22 @@ class DefaultFirebaseOptions {
     storageBucket: 'sep490-fa25se182.firebasestorage.app',
   );
 
+  static String toHttpsUrl(String gsUrl) {
+    if (!gsUrl.startsWith('gs://')) {
+      return gsUrl;
+    }
+    const String bucket = 'sep490-fa25se182.firebasestorage.app';
+    final uri = Uri.parse(gsUrl);
+
+    final pathSegments = uri.pathSegments;
+    if (pathSegments.isEmpty) return gsUrl;
+
+    final path = pathSegments.sublist(1).join('/');
+    final encodedPath = path.split('/').map(Uri.encodeComponent).join('/');
+
+    const String token = '94bb30d6-b65e-457f-bb07-e2b4740ee925';
+
+    return 'https://firebasestorage.googleapis.com/v0/b/$bucket/o/audios%2F$encodedPath?alt=media&token=$token';
+  }
+
 }
