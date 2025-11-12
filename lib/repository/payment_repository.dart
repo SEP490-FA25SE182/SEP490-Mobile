@@ -44,6 +44,32 @@ class PaymentRepository {
       (res.data as Map).cast<String, dynamic>(),
     );
   }
+
+  /// POST /api/rookie/payments/wallets/{walletId}/withdraw
+  Future<CreateCheckoutResponse> withdraw(
+      String walletId, {
+        required int amount,
+        required String accountName,
+        required String bankName,
+        required String accountNumber,
+        String? returnUrl,
+        String? cancelUrl,
+      }) async {
+    final res = await _dio.post(
+      '/api/rookie/payments/wallets/$walletId/withdraw',
+      queryParameters: <String, dynamic>{
+        'amount': amount,
+        'accountName': accountName,
+        'bankName': bankName,
+        'accountNumber': accountNumber,
+        if (returnUrl != null && returnUrl.isNotEmpty) 'returnUrl': returnUrl,
+        if (cancelUrl != null && cancelUrl.isNotEmpty) 'cancelUrl': cancelUrl,
+      },
+    );
+    return CreateCheckoutResponse.fromJson(
+      (res.data as Map).cast<String, dynamic>(),
+    );
+  }
 }
 
 

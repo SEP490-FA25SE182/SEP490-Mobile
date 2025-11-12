@@ -91,6 +91,7 @@ class OrderRepository {
         int? status,
         String? userAddressId,
         String? reason,
+        String? imageUrl,
       }) async {
     final body = <String, dynamic>{
       'amount': amount,
@@ -98,6 +99,7 @@ class OrderRepository {
       'status': status,
       'userAddressId': userAddressId,
       'reason': reason,
+      'imageUrl'  : imageUrl,
     }..removeWhere((_, v) => v == null);
 
     final res = await _dio.put(
@@ -107,7 +109,5 @@ class OrderRepository {
     );
     return Order.fromJson((res.data as Map).cast<String, dynamic>());
   }
-
-
 }
 

@@ -8,6 +8,11 @@ import '../../screen/order_status_screen.dart';
 import '../../style/button.dart';
 import '../../util/trans_type.dart' show TransactionType;
 
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart' as fstorage;
+
+import '../../widget/gs_image.dart';
 
 enum _Situation { received, notReceived }
 
@@ -23,6 +28,10 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
   _Situation _situation = _Situation.received;
   String? _reason;
   bool _busy = false;
+
+  // ==== Ảnh đã chọn ====
+  Uint8List? _imgBytes;
+  String? _imgName;
 
   @override
   Widget build(BuildContext context) {
@@ -55,10 +64,8 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
                           onPressed: () => context.pop(),
                         ),
                         const SizedBox(width: 6),
-                        const Text(
-                          'Yêu cầu Trả hàng/Hoàn tiền',
-                          style: TextStyle(color: Colors.white, fontSize: 16.5, fontWeight: FontWeight.w700),
-                        ),
+                        const Text('Yêu cầu Trả hàng/Hoàn tiền',
+                            style: TextStyle(color: Colors.white, fontSize: 16.5, fontWeight: FontWeight.w700)),
                       ],
                     ),
                   ),
@@ -68,11 +75,10 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
                     child: ListView(
                       padding: const EdgeInsets.all(12),
                       children: [
-                        // ======= Ô thông tin đơn: dùng OrderCard từ order_status_screen.dart =======
+                        // ===== Thông tin đơn =====
                         orderAsync.when(
                           loading: () => const LinearProgressIndicator(minHeight: 2),
-                          error: (e, _) => Text('Lỗi tải đơn: $e',
-                              style: const TextStyle(color: Colors.redAccent)),
+                          error: (e, _) => Text('Lỗi tải đơn: $e', style: const TextStyle(color: Colors.redAccent)),
                           data: (order) => OrderCard(
                             order: order,
                             actionLabel: 'Xem chi tiết',
@@ -80,31 +86,24 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
                             onSeeMore: () => context.push('/orders/detail/${order.orderId}'),
                           ),
                         ),
-
                         const SizedBox(height: 20),
 
-                        // ======= Tình huống =======
-                        const Text(
-                          'Tình huống bạn đang gặp',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                        ),
+                        // ===== Tình huống =====
+                        const Text('Tình huống bạn đang gặp',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
                         const SizedBox(height: 10),
                         _radioSituation('Tôi đã nhận hàng', _Situation.received),
                         _radioSituation('Tôi chưa nhận hàng/nhận thiếu hàng', _Situation.notReceived),
 
                         const SizedBox(height: 16),
 
-                        // ======= Lý do =======
-                        // ======= Lý do =======
+                        // ===== Lý do =====
                         Row(
                           children: [
                             const Expanded(
-                              child: Text(
-                                'Lý do',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                              ),
+                              child: Text('Lý do',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                             ),
-                            // Nút chọn lý do hiển thị nội dung đã chọn
                             ConstrainedBox(
                               constraints: const BoxConstraints(minHeight: 36, minWidth: 160, maxWidth: 300),
                               child: OutlinedButton(
@@ -115,19 +114,59 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 ),
                                 onPressed: _pickReason,
-                                child: Text(
-                                  _reason ?? 'Chọn lý do >>',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                child: Text(_reason ?? 'Chọn lý do >>',
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
                               ),
                             ),
                           ],
                         ),
 
+                        const SizedBox(height: 16),
+
+                        // ===== Thêm hình ảnh =====
+                        const Text('Thêm hình ảnh:',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: _chooseImage,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            height: 120,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white24, width: 1),
+                              color: const Color(0x12000000),
+                            ),
+                            child: Center(
+                              child: _imgBytes == null
+                                  ? Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  // Icon máy ảnh
+                                  GsImage(
+                                    url: 'gs://sep490-fa25se182.firebasestorage.app/icon/camera.png',
+                                    width: 42, height: 42, fit: BoxFit.contain,
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text('Chạm để chọn ảnh',
+                                      style: TextStyle(color: Colors.white70)),
+                                ],
+                              )
+                                  : ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.memory(_imgBytes!, fit: BoxFit.cover, width: double.infinity),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        if (_imgBytes == null)
+                          const Text('Bạn phải thêm hình ảnh trước khi gửi yêu cầu',
+                              style: TextStyle(color: Colors.pinkAccent)),
+
                         const SizedBox(height: 24),
 
-                        // ======= Gửi yêu cầu =======
+                        // ===== Gửi =====
                         ButtonSoft(
                           text: _busy ? 'Đang gửi...' : 'Gửi yêu cầu',
                           onTap: _busy ? null : () => _submit(orderAsync),
@@ -164,21 +203,11 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
     );
   }
 
-  // ==== Lý do theo tình huống ====
+  // ==== Chọn lý do ====
   Future<void> _pickReason() async {
     final reasons = (_situation == _Situation.received)
-        ? const [
-      'Nền tảng gửi sai hàng',
-      'Hàng hư hỏng, lỗi',
-      'Hàng khác với mô tả',
-      'Hàng đã qua sử dụng',
-      'Hàng giả, nhái',
-    ]
-        : const [
-      'Chưa nhận được hàng',
-      'Thiếu hàng',
-      'Thùng hàng rỗng',
-    ];
+        ? const ['Nền tảng gửi sai hàng','Hàng hư hỏng, lỗi','Hàng khác với mô tả','Hàng đã qua sử dụng','Hàng giả, nhái']
+        : const ['Chưa nhận được hàng','Thiếu hàng','Thùng hàng rỗng'];
 
     final chosen = await showModalBottomSheet<String>(
       context: context,
@@ -211,11 +240,43 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
     }
   }
 
-  // ==== Submit update RETURNED + reason ====
+  // ==== Chọn ảnh từ thư viện ====
+  Future<void> _chooseImage() async {
+    final picker = ImagePicker();
+    final x = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (x == null) return;
+
+    final bytes = await x.readAsBytes();
+    setState(() {
+      _imgBytes = bytes;
+      _imgName  = x.name;
+    });
+  }
+
+  // ==== Upload ảnh lên Firebase Storage====
+  Future<String> _uploadImageToGs(String orderId) async {
+    if (_imgBytes == null) throw StateError('No image selected');
+
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final fileName = _imgName ?? 'evidence_$ts.jpg';
+    final path = 'order/$orderId/$fileName';
+
+    final storage = fstorage.FirebaseStorage.instance;
+    final ref = storage.ref().child(path);
+
+    final meta = fstorage.SettableMetadata(contentType: 'image/jpeg');
+    await ref.putData(_imgBytes!, meta);
+
+    final bucket = storage.bucket;
+    final gsUrl = 'gs://$bucket/$path';
+    return gsUrl;
+  }
+
+  // ==== Gửi yêu cầu (update Order + tạo REFUND transaction) ====
   Future<void> _submit(AsyncValue<Order> orderAsync) async {
-    if ((_reason ?? '').isEmpty) {
+    if ((_reason ?? '').isEmpty || _imgBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn lý do')),
+        const SnackBar(content: Text('Bạn phải thêm hình ảnh/lý do trước khi gửi yêu cầu')),
       );
       return;
     }
@@ -230,14 +291,18 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
 
     setState(() => _busy = true);
     try {
-      // 1) Cập nhật Order -> RETURNED + reason
+      // 1) Upload ảnh
+      final gsUrl = await _uploadImageToGs(order.orderId);
+
+      // 2) Cập nhật Order: status = 6 (RETURNED), reason + imageUrl
       await ref.read(orderRepoProvider).update(
         order.orderId,
         status: 6,
         reason: reasonText,
+        imageUrl: gsUrl,
       );
 
-      // 2) Tạo Transaction REFUND
+      // 3) Tạo Transaction REFUND
       await ref.read(transactionRepoProvider).createWallet(
         totalPrice: order.totalPrice,
         status: 0,
@@ -249,8 +314,6 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã gửi yêu cầu')),
       );
-
-      // Điều hướng sau khi gửi
       context.go('/orders/return');
     } catch (e) {
       if (!mounted) return;
