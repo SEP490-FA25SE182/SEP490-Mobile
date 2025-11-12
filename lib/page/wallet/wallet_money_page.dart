@@ -18,6 +18,32 @@ class WalletMoneyPage extends ConsumerStatefulWidget {
 class _WalletMoneyPageState extends ConsumerState<WalletMoneyPage> {
   bool _showAll = false;
 
+  void _refresh() {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null || userId.isEmpty) return;
+
+    ref.invalidate(walletByUserProvider(userId));
+
+    final wid = ref.read(walletByUserProvider(userId)).value?.walletId;
+    if (wid != null && wid.isNotEmpty) {
+      ref.invalidate(transactionsByWalletProvider(wid));
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final wid2 = ref.read(walletByUserProvider(userId)).value?.walletId;
+      if (wid2 != null && wid2.isNotEmpty) {
+        ref.invalidate(transactionsByWalletProvider(wid2));
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Mỗi lần mở trang -> reload
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+  }
+
   @override
   Widget build(BuildContext context) {
     final userId = ref.watch(currentUserIdProvider);
@@ -61,15 +87,7 @@ class _WalletMoneyPageState extends ConsumerState<WalletMoneyPage> {
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.check_box_outlined, color: Colors.white),
-                          onPressed: () {
-                            if (userId != null && userId.isNotEmpty) {
-                              ref.invalidate(walletByUserProvider(userId));
-                              final wid = ref.read(walletByUserProvider(userId)).value?.walletId;
-                              if (wid != null && wid.isNotEmpty) {
-                                ref.invalidate(transactionsByWalletProvider(wid));
-                              }
-                            }
-                          },
+                          onPressed: _refresh,
                         ),
                       ],
                     ),
@@ -154,25 +172,29 @@ class _WalletMoneyPageState extends ConsumerState<WalletMoneyPage> {
                               _ActionButton(
                                 icon: 'gs://sep490-fa25se182.firebasestorage.app/icon/wallet.png',
                                 label: 'Nạp tiền',
-                                onTap: () {
+                                onTap: () async {
                                   if (wid == null || wid.isEmpty) {
                                     ScaffoldMessenger.of(context)
                                         .showSnackBar(const SnackBar(content: Text('Không tìm thấy ví.')));
                                     return;
                                   }
-                                  context.push('/wallet/deposit/$wid');
+                                  await context.push('/wallet/deposit/$wid');
+                                  if (!mounted) return;
+                                  _refresh();
                                 },
                               ),
                               _ActionButton(
                                 icon: 'gs://sep490-fa25se182.firebasestorage.app/icon/withdraw.png',
                                 label: 'Rút tiền',
-                                onTap: () {
+                                onTap: () async {
                                   if (wid == null || wid.isEmpty) {
                                     ScaffoldMessenger.of(context)
                                         .showSnackBar(const SnackBar(content: Text('Không tìm thấy ví.')));
                                     return;
                                   }
-                                  context.push('/wallet/withdraw/$wid');
+                                  await context.push('/wallet/withdraw/$wid');
+                                  if (!mounted) return;
+                                  _refresh();
                                 },
                               ),
                               _ActionButton(

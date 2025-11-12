@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../provider.dart';
 import '../../model/wallet.dart';
 import '../../style/button.dart';
+import '../../util/trans_type.dart';
 import '../../widget/gs_image.dart';
 import '../../style/input_text.dart';
 import '../../style/button.dart';
@@ -351,12 +352,22 @@ class _WithdrawPageState extends ConsumerState<WithdrawPage> {
   Future<void> _submit(Wallet wallet) async {
     setState(() => _busy = true);
     try {
-      final newBalance = (wallet.balance - _amount).clamp(0, double.maxFinite).toDouble();
-      await ref.read(walletRepoProvider).update(wallet.walletId, balance: newBalance);
+      final accName = _accNameCtl.text.trim();
+      final accNo   = _accNoCtl.text.trim();
+      final bank    = _bankName ?? '';
+
+      // Gọi API rút tiền
+      await ref.read(paymentRepoProvider).withdraw(
+        wallet.walletId,
+        amount: _amount,
+        accountName: accName,
+        bankName: bank,
+        accountNumber: accNo,
+      );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Yêu cầu rút tiền đã được ghi nhận')),
+        const SnackBar(content: Text('Bạn đã rút tiền thành công')),
       );
       context.go('/wallet/money');
     } on DioException catch (e) {
@@ -388,23 +399,15 @@ String _fmtVnd(double v) =>
 String _fmtInt(int v) =>
     v.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
 
-// Rút gọn danh sách ngân hàng VN (bạn có thể bổ sung thêm nếu muốn)
+// Danh sách ngân hàng VN
 const List<String> _vnBanks = [
-  'Vietcombank (VCB)',
-  'VietinBank (CTG)',
+  'Vietcombank',
+  'VietinBank',
+  'TPbank',
   'BIDV',
   'Agribank',
-  'Techcombank (TCB)',
-  'MB Bank (MB)',
+  'Techcombank',
+  'MBbank',
   'ACB',
-  'Sacombank (STB)',
-  'VPBank',
-  'TPBank',
-  'VIB',
-  'OCB',
-  'HDBank',
-  'SHB',
-  'Eximbank',
-  'LienVietPostBank',
-  'SCB',
+  'Sacombank',
 ];

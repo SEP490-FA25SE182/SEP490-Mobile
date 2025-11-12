@@ -14,6 +14,7 @@ class Order {
   final String cartId;
   final String? userAddressId;
   final String? reason;
+  final String? imageUrl;
 
   final List<OrderDetail> orderDetails;
 
@@ -28,6 +29,7 @@ class Order {
     required this.cartId,
     this.userAddressId,
     this.reason,
+    this.imageUrl,
     this.orderDetails = const [],
   });
 
@@ -72,6 +74,7 @@ class Order {
       cartId       : (j['cartId'] ?? '').toString(),
       userAddressId: _userAddressId(),
       reason       : _reason(),
+      imageUrl  : j['imageUrl']?.toString(),
       orderDetails : details,
     );
   }
@@ -87,6 +90,7 @@ class Order {
     'cartId'       : cartId,
     if (userAddressId != null) 'userAddressId': userAddressId,
     if (reason != null && reason!.isNotEmpty) 'reason': reason,
+    'imageUrl'  : imageUrl,
     'orderDetails' : orderDetails.map((e) => e.toJson()).toList(),
   };
 }
