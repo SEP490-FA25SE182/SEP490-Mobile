@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sep490_mobile/page/blog/blog_detail_page.dart';
 import 'package:sep490_mobile/page/book/book_detail_page.dart';
+import 'package:sep490_mobile/page/book/book_show_page.dart';
+import 'package:sep490_mobile/page/book/page_read.dart';
 import 'package:sep490_mobile/page/order/checkout_page.dart';
 import 'package:sep490_mobile/page/order/detail_refund_page.dart';
 import 'package:sep490_mobile/page/order/feedback_page.dart';
@@ -88,6 +90,19 @@ GoRouter buildRouter() => GoRouter(
       path: '/books/:id',
       name: 'book_detail',
       builder: (context, state) => BookDetailPage(bookId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/show/:bookId',
+      name: 'book_show',
+      builder: (context, state) => BookShowPage(bookId: state.pathParameters['bookId']!),
+    ),
+    GoRoute(
+      path: '/reader/:bookId/:chapterId',
+      name: 'reader',
+      builder: (context, state) => PageReadPage(
+        bookId: state.pathParameters['bookId']!,
+        chapterId: state.pathParameters['chapterId']!,
+      ),
     ),
     GoRoute(path: '/profile', name: 'profile', builder: (_, __) => const _ProfileLoader()),
     GoRoute(path: '/address/edit', builder: (_, st) => EditAddressPage(args: st.extra as EditAddressArgs)),

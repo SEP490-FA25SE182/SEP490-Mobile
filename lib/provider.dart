@@ -4,6 +4,7 @@ import 'package:sep490_mobile/repository/address_repository.dart';
 import 'package:sep490_mobile/repository/blog_repository.dart';
 import 'package:sep490_mobile/repository/cart_item_repository.dart';
 import 'package:sep490_mobile/repository/cart_repository.dart';
+import 'package:sep490_mobile/repository/chapter_repository.dart';
 import 'package:sep490_mobile/repository/comment_repository.dart';
 import 'package:sep490_mobile/repository/genre_repository.dart';
 import 'package:sep490_mobile/repository/order_detail_repository.dart';
@@ -25,10 +26,12 @@ import 'model/book.dart';
 import 'model/cart.dart';
 import 'model/cart_item.dart';
 import 'model/bookshelve.dart';
+import 'model/chapter.dart';
 import 'model/comment.dart';
 import 'model/genre.dart';
 import 'model/order.dart';
 import 'model/order_detail.dart';
+import 'model/page.dart';
 import 'model/payment_method.dart';
 import 'model/transaction.dart';
 import 'model/user_address.dart';
@@ -304,4 +307,30 @@ final paymentMethodByIdProvider =
 FutureProvider.family<PaymentMethod?, String?>((ref, pmId) async {
   if (pmId == null || pmId.isEmpty) return null;
   return ref.read(paymentMethodRepoProvider).getById(pmId);
+});
+
+///OrderRepository
+final orderRepositoryProvider = Provider<OrderRepository>(
+      (ref) => OrderRepository(ref.read(dioProvider)),
+);
+
+///ChapterRepository
+final chapterRepoProvider = Provider<ChapterRepository>((ref) {
+  final dio = ref.read(dioProvider);
+  return ChapterRepository(dio);
+});
+
+final chapterByIdProvider = FutureProvider.family<Chapter, String>((ref, chapterId) async {
+  final repo = ref.read(chapterRepoProvider);
+  return repo.getById(chapterId);
+});
+
+final chapterRepositoryProvider = Provider<ChapterRepository>((ref) {
+  final dio = ref.read(dioProvider);
+  return ChapterRepository(dio);
+});
+
+final pagesByChapterProvider = FutureProvider.family<List<PageModel>, String>((ref, chapterId) {
+  final repo = ref.read(chapterRepositoryProvider);
+  return repo.getPagesByChapterId(chapterId);
 });
