@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../model/book.dart';
 import '../model/order.dart';
 import '../provider.dart';
 
@@ -109,5 +110,101 @@ class OrderRepository {
     );
     return Order.fromJson((res.data as Map).cast<String, dynamic>());
   }
+
+
+  Future<PageResponse<Book>> getPurchasedBooks({
+    required String userId,
+    String? q,
+    String? sort, // e.g. "updatedAt-desc", "bookName-asc", "price-desc"
+    String? genreId,
+    String? bookshelfId,
+    int page = 0,
+    int size = 20,
+  }) async {
+    try {
+      print('Fetching purchased books: user=$userId, q=$q, sort=$sort');
+
+      final response = await _dio.get(
+        '/api/rookie/users/orders/purchased-books',
+        queryParameters: <String, dynamic>{
+          'userId': userId,
+          'page': page,
+          'size': size,
+          if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
+          if (sort != null && sort.trim().isNotEmpty) 'sort': sort.trim(),
+          if (genreId != null && genreId.trim().isNotEmpty) 'genreId': genreId.trim(),
+          if (bookshelfId != null && bookshelfId.trim().isNotEmpty) 'bookshelfId': bookshelfId.trim(),
+        },
+      );
+
+      final data = response.data as Map<String, dynamic>;
+      final List<Book> books = (data['content'] as List)
+          .map((item) => Book.fromJson(item as Map<String, dynamic>))
+          .toList();
+
+      return PageResponse<Book>(
+        content: books,
+        totalElements: data['totalElements'] as int? ?? books.length,
+        totalPages: data['totalPages'] as int? ?? 1,
+        page: data['number'] as int? ?? page,
+        size: data['size'] as int? ?? size,
+        isLast: data['last'] as bool? ?? true,
+      );
+    } catch (e, st) {
+      print('[OrderRepo] Error fetching purchased books: $e\n$st');
+      return PageResponse<Book>(
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        page: page,
+        size: size,
+        isLast: true,
+      );
+    }
+  }
+
+  // Optional: Simple version if you just want List<Book>
+  Future<List<Book>> getPurchasedBooksSimple({
+    required String userId,
+    String? q,
+    String? sort,
+  }) async {
+    final page = await getPurchasedBooks(
+      userId: userId,
+      q: q,
+      sort: sort,
+      page: 0,
+      size: 999, // or a large number
+    );
+    return page.content;
+  }
 }
+
+class PageResponse<T> {
+  final List<T> content;
+  final int totalElements;
+  final int totalPages;
+  final int page;
+  final int size;
+  final bool isLast;
+
+  PageResponse({
+    required this.content,
+    required this.totalElements,
+    required this.totalPages,
+    required this.page,
+    required this.size,
+    required this.isLast,
+  });
+
+  factory PageResponse.empty() => PageResponse<T>(
+    content: [],
+    totalElements: 0,
+    totalPages: 0,
+    page: 0,
+    size: 20,
+    isLast: true,
+  );
+}
+
 

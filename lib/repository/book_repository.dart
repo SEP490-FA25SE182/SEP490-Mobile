@@ -83,7 +83,7 @@ class BookRepository {
       throw Exception('Dữ liệu sách không hợp lệ');
     } on DioException catch (e) {
       mapDioError(e);
-      rethrow; // để FutureProvider biết lỗi
+      rethrow;
     }
   }
 

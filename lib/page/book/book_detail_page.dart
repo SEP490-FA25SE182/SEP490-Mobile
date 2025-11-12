@@ -68,6 +68,9 @@ class BookDetailPage extends ConsumerWidget {
 
       // Refresh the favorite state
       ref.invalidate(isBookInFavoriteProvider((userId, bookId)));
+      ref.invalidate(booksByShelfProvider(shelfId));
+      ref.invalidate(bookshelvesProvider(userId));
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi cập nhật kệ sách: $e')),
