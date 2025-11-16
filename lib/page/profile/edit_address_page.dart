@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../model/user_address.dart';
+import '../../model/ghn_models.dart'; // GHN models
 import '../../provider.dart';
 import '../../style/button.dart';
 import '../../style/input_text.dart';
@@ -23,46 +24,47 @@ class EditAddressPage extends ConsumerStatefulWidget {
   ConsumerState<EditAddressPage> createState() => _EditAddressPageState();
 }
 
-T? _firstOrNull<T>(Iterable<T> it, bool Function(T) test) {
-  for (final x in it) {
-    if (test(x)) return x;
-  }
-  return null;
-}
-
 class _EditAddressPageState extends ConsumerState<EditAddressPage> {
   static const _trashIconGs =
       'gs://sep490-fa25se182.firebasestorage.app/icon/trash-can.png';
+
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _streetCtrl;
 
-  String? _province;
-  String? _district;
-  String? _ward;
+  GhnProvince? _selectedProvince;
+  GhnDistrict? _selectedDistrict;
+  GhnWard? _selectedWard;
+
   String _type = 'Home';
+  bool _isDefault = false;
   bool _saving = false;
+
+  String? _provinceId;
+  String? _districtId;
+  String? _wardCode;
 
   @override
   void initState() {
     super.initState();
     final a = widget.args.address;
 
-    _nameCtrl   = TextEditingController(text: a.fullName);
-    _phoneCtrl  = TextEditingController(text: a.phoneNumber ?? '');
+    _nameCtrl = TextEditingController(text: a.fullName);
+    _phoneCtrl = TextEditingController(text: a.phoneNumber ?? '');
     _streetCtrl = TextEditingController();
 
-    // Parse addressInfor -> street, ward, district, province
     if (a.addressInfor.trim().isNotEmpty) {
       final parts = a.addressInfor.split(',').map((e) => e.trim()).toList();
       if (parts.isNotEmpty) _streetCtrl.text = parts[0];
-      if (parts.length >= 2) _ward     = parts[1].isEmpty ? null : parts[1];
-      if (parts.length >= 3) _district = parts[2].isEmpty ? null : parts[2];
-      if (parts.length >= 4) _province = parts[3].isEmpty ? null : parts[3];
     }
 
     final t = (a.type ?? '').toLowerCase();
     _type = t == 'office' ? 'Office' : 'Home';
+    _isDefault = a.isDefault;
+
+    _provinceId = a.provinceId;
+    _districtId = a.districtId;
+    _wardCode = a.wardCode;
   }
 
   @override
@@ -73,22 +75,23 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
     super.dispose();
   }
 
-  Future<void> _pickSelect({
+  /// Bottom‑sheet picker chung
+  Future<void> _pickSelect<T>({
     required String title,
-    required List<String> options,
-    required void Function(String) onPicked,
-    String? current,
+    required List<T> options,
+    required void Function(T) onPicked,
+    T? current,
+    required String Function(T) display,
   }) async {
-    final ctx = context;
-    final v = await showModalBottomSheet<String>(
-      context: ctx,
+    final v = await showModalBottomSheet<T>(
+      context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF141B29),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) {
-        final h = MediaQuery.of(ctx).size.height;
+        final h = MediaQuery.of(context).size.height;
         return SafeArea(
           top: false,
           child: ConstrainedBox(
@@ -99,11 +102,14 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: Center(
-                    child: Text(title,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16)),
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                 ),
                 const Divider(height: 1, color: Colors.white12),
@@ -118,7 +124,7 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
                       final selected = e == current;
                       return ListTile(
                         title: Text(
-                          e,
+                          display(e),
                           style: TextStyle(
                             color: Colors.white
                                 .withOpacity(selected ? 1 : 0.9),
@@ -129,7 +135,7 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
                         trailing: selected
                             ? const Icon(Icons.check, color: Colors.white70)
                             : null,
-                        onTap: () => Navigator.pop(ctx, e),
+                        onTap: () => Navigator.pop(context, e),
                       );
                     },
                   ),
@@ -144,19 +150,24 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
     if (v != null) onPicked(v);
   }
 
+  /// Lưu địa chỉ
   Future<void> _save() async {
-    if (_nameCtrl.text.trim().isEmpty || _streetCtrl.text.trim().isEmpty) {
+    if (_nameCtrl.text.trim().isEmpty ||
+        _streetCtrl.text.trim().isEmpty ||
+        _selectedProvince == null ||
+        _selectedDistrict == null ||
+        _selectedWard == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập Họ tên và Địa chỉ.')),
+        const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin')),
       );
       return;
     }
 
     final addressInfor = [
       _streetCtrl.text.trim(),
-      if ((_ward ?? '').isNotEmpty) _ward!,
-      if ((_district ?? '').isNotEmpty) _district!,
-      if ((_province ?? '').isNotEmpty) _province!,
+      _selectedWard!.wardName,
+      _selectedDistrict!.districtName,
+      _selectedProvince!.provinceName,
     ].join(', ');
 
     setState(() => _saving = true);
@@ -168,21 +179,25 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
         phoneNumber:
         _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
         type: _type,
+        provinceId: _selectedProvince!.provinceID.toString(),
+        districtId: _selectedDistrict!.districtID.toString(),
+        wardCode: _selectedWard!.wardCode,
       );
 
-      // Làm mới cache danh sách địa chỉ của user
       invalidateAddressesCache(ref, widget.args.userId);
       if (mounted) context.pop(true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lưu địa chỉ thất bại: $e')));
+          SnackBar(content: Text('Lưu địa chỉ thất bại: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
+  /// Xác nhận xoá
   Future<void> _confirmDelete() async {
     final ctx = context;
     final ok = await showDialog<bool>(
@@ -228,45 +243,37 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
 
   @override
   Widget build(BuildContext context) {
-    final locationsAsync = ref.watch(vnLocationsProvider);
+    final provincesAsync = ref.watch(ghnProvincesProvider);
 
-    return locationsAsync.when(
+    return provincesAsync.when(
       loading: () => const Scaffold(
         backgroundColor: Colors.transparent,
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
         backgroundColor: Colors.transparent,
-        body: Center(child: Text('Không tải được danh mục địa chỉ: $e')),
+        body: Center(child: Text('Lỗi tải tỉnh: $e')),
       ),
-      data: (provincesData) {
-        final provinceNames = provincesData.map((p) => p.name).toList();
+      data: (provinces) {
 
-        // ---- Tra cứu an toàn, không dùng firstWhere "trần" ----
-        final province = (_province == null)
-            ? null
-            : _firstOrNull(
-          provincesData,
-              (p) => p.name.trim() == _province!.trim(),
-        );
+        if (_selectedProvince == null && _provinceId != null) {
+          _selectedProvince = provinces.cast<GhnProvince?>().firstWhere(
+                (p) => p?.provinceID.toString() == _provinceId,
+            orElse: () => null,
+          );
+          if (_selectedProvince != null) {
+            ref.invalidate(
+                ghnDistrictsProvider(_selectedProvince!.provinceID));
+          }
+        }
 
-        final districtNames = (province == null)
-            ? <String>[]
-            : province.districts.map((d) => d.name).toList();
+        final districtsAsync = _selectedProvince != null
+            ? ref.watch(ghnDistrictsProvider(_selectedProvince!.provinceID))
+            : null;
 
-        final district = (province == null || _district == null)
-            ? null
-            : _firstOrNull(
-          province.districts,
-              (d) => d.name.trim() == _district!.trim(),
-        );
-
-        final wardNames = (district == null)
-            ? <String>[]
-            : district.wards.map((w) => w.name).toList();
-
-        final canPickDistrict = province != null && districtNames.isNotEmpty;
-        final canPickWard = district != null && wardNames.isNotEmpty;
+        final wardsAsync = _selectedDistrict != null
+            ? ref.watch(ghnWardsProvider(_selectedDistrict!.districtID))
+            : null;
 
         return Scaffold(
           backgroundColor: Colors.transparent,
@@ -303,7 +310,7 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
-                  // Khối thông tin địa chỉ
+
                   Container(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     decoration: BoxDecoration(
@@ -315,10 +322,9 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Địa chỉ (dùng thông tin trước sáp nhập)',
+                          'Địa chỉ giao hàng',
                           style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800),
+                              color: Colors.white, fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 16),
 
@@ -328,8 +334,8 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
                         InputFieldBox(
                           child: TextField(
                             controller: _nameCtrl,
-                            decoration:
-                            const InputDecoration(border: InputBorder.none),
+                            decoration: const InputDecoration(
+                                border: InputBorder.none),
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
@@ -342,8 +348,8 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
                           child: TextField(
                             controller: _phoneCtrl,
                             keyboardType: TextInputType.phone,
-                            decoration:
-                            const InputDecoration(border: InputBorder.none),
+                            decoration: const InputDecoration(
+                                border: InputBorder.none),
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
@@ -357,23 +363,30 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
                             dense: true,
                             contentPadding: EdgeInsets.zero,
                             title: Text(
-                              _province ?? 'Chọn Tỉnh/Thành phố',
+                              _selectedProvince?.provinceName ??
+                                  'Chọn Tỉnh/Thành phố',
                               style: TextStyle(
-                                  color: _province == null
-                                      ? Colors.white38
-                                      : Colors.white),
+                                color: _selectedProvince == null
+                                    ? Colors.white38
+                                    : Colors.white,
+                              ),
                             ),
                             trailing: const Icon(Icons.expand_more,
                                 color: Colors.white70),
                             onTap: () => _pickSelect(
                               title: 'Tỉnh/Thành phố',
-                              options: provinceNames,
-                              current: _province,
-                              onPicked: (v) => setState(() {
-                                _province = v;
-                                _district = null;
-                                _ward = null;
-                              }),
+                              options: provinces,
+                              current: _selectedProvince,
+                              display: (p) => p.provinceName,
+                              onPicked: (v) {
+                                setState(() {
+                                  _selectedProvince = v;
+                                  _selectedDistrict = null;
+                                  _selectedWard = null;
+                                });
+                                ref.invalidate(ghnDistrictsProvider);
+                                ref.invalidate(ghnWardsProvider);
+                              },
                             ),
                           ),
                         ),
@@ -383,31 +396,67 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
                             style: TextStyle(color: Colors.white70)),
                         const SizedBox(height: 6),
                         InputFieldBox(
-                          child: ListTile(
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              _province == null
-                                  ? 'Chọn Tỉnh/Thành trước'
-                                  : (_district ?? 'Chọn Quận/Huyện'),
-                              style: TextStyle(
-                                  color: (_district == null)
-                                      ? Colors.white38
-                                      : Colors.white),
+                          child: districtsAsync == null
+                              ? const ListTile(
+                            title: Text('Chọn Tỉnh/Thành trước',
+                                style:
+                                TextStyle(color: Colors.white38)),
+                          )
+                              : districtsAsync.when(
+                            loading: () => const ListTile(
+                              title: Text('Đang tải...',
+                                  style:
+                                  TextStyle(color: Colors.white38)),
                             ),
-                            trailing: const Icon(Icons.expand_more,
-                                color: Colors.white70),
-                            onTap: !canPickDistrict
-                                ? null
-                                : () => _pickSelect(
-                              title: 'Quận/Huyện',
-                              options: districtNames,
-                              current: _district,
-                              onPicked: (v) => setState(() {
-                                _district = v;
-                                _ward = null;
-                              }),
+                            error: (_, __) => const ListTile(
+                              title: Text('Lỗi tải quận',
+                                  style: TextStyle(color: Colors.red)),
                             ),
+                            data: (districts) {
+                              if (_selectedDistrict == null &&
+                                  _districtId != null) {
+                                _selectedDistrict = districts
+                                    .cast<GhnDistrict?>()
+                                    .firstWhere(
+                                      (d) => d?.districtID.toString() ==
+                                      _districtId,
+                                  orElse: () => null,
+                                );
+                                if (_selectedDistrict != null) {
+                                  ref.invalidate(ghnWardsProvider(
+                                      _selectedDistrict!.districtID));
+                                }
+                              }
+
+                              return ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(
+                                  _selectedDistrict?.districtName ??
+                                      'Chọn Quận/Huyện',
+                                  style: TextStyle(
+                                    color: _selectedDistrict == null
+                                        ? Colors.white38
+                                        : Colors.white,
+                                  ),
+                                ),
+                                trailing: const Icon(Icons.expand_more,
+                                    color: Colors.white70),
+                                onTap: () => _pickSelect(
+                                  title: 'Quận/Huyện',
+                                  options: districts,
+                                  current: _selectedDistrict,
+                                  display: (d) => d.districtName,
+                                  onPicked: (v) {
+                                    setState(() {
+                                      _selectedDistrict = v;
+                                      _selectedWard = null;
+                                    });
+                                    ref.invalidate(ghnWardsProvider);
+                                  },
+                                ),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -416,47 +465,67 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
                             style: TextStyle(color: Colors.white70)),
                         const SizedBox(height: 6),
                         InputFieldBox(
-                          child: ListTile(
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              _district == null
-                                  ? 'Chọn Quận/Huyện trước'
-                                  : (_ward ?? 'Chọn Phường/Xã'),
-                              style: TextStyle(
-                                  color: (_ward == null)
-                                      ? Colors.white38
-                                      : Colors.white),
+                          child: wardsAsync == null
+                              ? const ListTile(
+                            title: Text('Chọn Quận/Huyện trước',
+                                style:
+                                TextStyle(color: Colors.white38)),
+                          )
+                              : wardsAsync.when(
+                            loading: () => const ListTile(
+                              title: Text('Đang tải...',
+                                  style:
+                                  TextStyle(color: Colors.white38)),
                             ),
-                            trailing: const Icon(Icons.expand_more,
-                                color: Colors.white70),
-                            onTap: !canPickWard
-                                ? null
-                                : () => _pickSelect(
-                              title: 'Phường/Xã',
-                              options: wardNames,
-                              current: _ward,
-                              onPicked: (v) =>
-                                  setState(() => _ward = v),
+                            error: (_, __) => const ListTile(
+                              title: Text('Lỗi tải phường',
+                                  style: TextStyle(color: Colors.red)),
                             ),
+                            data: (wards) {
+                              if (_selectedWard == null &&
+                                  _wardCode != null) {
+                                _selectedWard = wards
+                                    .cast<GhnWard?>()
+                                    .firstWhere(
+                                      (w) => w?.wardCode == _wardCode,
+                                  orElse: () => null,
+                                );
+                              }
+
+                              return ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(
+                                  _selectedWard?.wardName ??
+                                      'Chọn Phường/Xã',
+                                  style: TextStyle(
+                                    color: _selectedWard == null
+                                        ? Colors.white38
+                                        : Colors.white,
+                                  ),
+                                ),
+                                trailing: const Icon(Icons.expand_more,
+                                    color: Colors.white70),
+                                onTap: () => _pickSelect(
+                                  title: 'Phường/Xã',
+                                  options: wards,
+                                  current: _selectedWard,
+                                  display: (w) => w.wardName,
+                                  onPicked: (v) =>
+                                      setState(() => _selectedWard = v),
+                                ),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 14),
 
-                        const Text('Tên đường, Tòa nhà, Số nhà',
+                        const Text('Tên đường, Số nhà',
                             style: TextStyle(color: Colors.white70)),
                         const SizedBox(height: 6),
                         InputFieldBox(
                           child: TextField(
                             controller: _streetCtrl,
-                            keyboardType: TextInputType.text,
-                            textInputAction: TextInputAction.done,
-                            enableSuggestions: true,
-                            autocorrect: true,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.deny(
-                                  RegExp(r'[\r\n]')),
-                            ],
                             decoration: const InputDecoration(
                               border: InputBorder.none,
                               hintText: 'VD: 123 Lưu Hữu Phước',
@@ -471,31 +540,50 @@ class _EditAddressPageState extends ConsumerState<EditAddressPage> {
 
                   const SizedBox(height: 12),
 
-                  // Loại địa chỉ
                   Container(
-                    padding:
-                    const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                     decoration: BoxDecoration(
                       color: const Color(0x10FFFFFF),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: Colors.white12),
                     ),
-                    child: Row(
+                    child: Column(
                       children: [
-                        const Expanded(
-                          child: Text('Loại địa chỉ',
-                              style: TextStyle(color: Colors.white70)),
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text('Đặt làm địa chỉ mặc định',
+                                  style: TextStyle(color: Colors.white70)),
+                            ),
+                            Checkbox(
+                              value: _isDefault,
+                              onChanged: (v) =>
+                                  setState(() => _isDefault = v ?? false),
+                              side: const BorderSide(color: Colors.white54),
+                              checkColor: Colors.white,
+                              activeColor: const Color(0xFF5B6CF3),
+                            ),
+                          ],
                         ),
-                        _TypeChip(
-                          text: 'Văn phòng',
-                          selected: _type == 'Office',
-                          onTap: () => setState(() => _type = 'Office'),
-                        ),
-                        const SizedBox(width: 8),
-                        _TypeChip(
-                          text: 'Nhà riêng',
-                          selected: _type == 'Home',
-                          onTap: () => setState(() => _type = 'Home'),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text('Loại địa chỉ',
+                                  style: TextStyle(color: Colors.white70)),
+                            ),
+                            _TypeChip(
+                              text: 'Văn phòng',
+                              selected: _type == 'Office',
+                              onTap: () => setState(() => _type = 'Office'),
+                            ),
+                            const SizedBox(width: 8),
+                            _TypeChip(
+                              text: 'Nhà riêng',
+                              selected: _type == 'Home',
+                              onTap: () => setState(() => _type = 'Home'),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -535,8 +623,7 @@ class _TypeChip extends StatelessWidget {
           color: selected ? const Color(0x335B6CF3) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color:
-              selected ? const Color(0xFF5B6CF3) : Colors.white30),
+              color: selected ? const Color(0xFF5B6CF3) : Colors.white30),
         ),
         child: Text(
           text,

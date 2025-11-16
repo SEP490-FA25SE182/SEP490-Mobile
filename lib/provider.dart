@@ -7,6 +7,7 @@ import 'package:sep490_mobile/repository/cart_repository.dart';
 import 'package:sep490_mobile/repository/chapter_repository.dart';
 import 'package:sep490_mobile/repository/comment_repository.dart';
 import 'package:sep490_mobile/repository/genre_repository.dart';
+import 'package:sep490_mobile/repository/ghn_repository.dart';
 import 'package:sep490_mobile/repository/order_detail_repository.dart';
 import 'package:sep490_mobile/repository/order_repository.dart';
 import 'package:sep490_mobile/repository/payment_method_repository.dart';
@@ -29,6 +30,7 @@ import 'model/bookshelve.dart';
 import 'model/chapter.dart';
 import 'model/comment.dart';
 import 'model/genre.dart';
+import 'model/ghn_models.dart';
 import 'model/order.dart';
 import 'model/order_detail.dart';
 import 'model/page.dart';
@@ -273,7 +275,7 @@ FutureProvider.family<Transaction?, String>((ref, oid) async {
   return page.content.isEmpty ? null : page.content.first;
 });
 
-// Search theo orderId và REFUND
+/// Search theo orderId và REFUND
 final transactionRefundByOrderProvider =
 FutureProvider.family<Transaction?, String>((ref, oid) async {
   final page = await ref.read(transactionRepoProvider).search(
@@ -333,4 +335,38 @@ final chapterRepositoryProvider = Provider<ChapterRepository>((ref) {
 final pagesByChapterProvider = FutureProvider.family<List<PageModel>, String>((ref, chapterId) {
   final repo = ref.read(chapterRepositoryProvider);
   return repo.getPagesByChapterId(chapterId);
+});
+
+/// GhnRepository
+final ghnRepositoryProvider = Provider<GhnRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+  return GhnRepository(dio);
+});
+
+final ghnProvincesProvider = FutureProvider.autoDispose<List<GhnProvince>>((ref) async {
+  final repo = ref.read(ghnRepositoryProvider);
+  try {
+    final provinces = await repo.getProvinces();
+    return provinces;
+  } catch (e) {
+    return <GhnProvince>[];
+  }
+});
+
+final ghnDistrictsProvider = FutureProvider.autoDispose.family<List<GhnDistrict>, int>((ref, provinceId) async {
+  final repo = ref.read(ghnRepositoryProvider);
+  try {
+    return await repo.getDistricts(provinceId);
+  } catch (e) {
+    return <GhnDistrict>[];
+  }
+});
+
+final ghnWardsProvider = FutureProvider.autoDispose.family<List<GhnWard>, int>((ref, districtId) async {
+  final repo = ref.read(ghnRepositoryProvider);
+  try {
+    return await repo.getWards(districtId);
+  } catch (e) {
+    return <GhnWard>[];
+  }
 });
