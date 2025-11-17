@@ -6,6 +6,7 @@ import 'package:sep490_mobile/repository/cart_item_repository.dart';
 import 'package:sep490_mobile/repository/cart_repository.dart';
 import 'package:sep490_mobile/repository/chapter_repository.dart';
 import 'package:sep490_mobile/repository/comment_repository.dart';
+import 'package:sep490_mobile/repository/feedback_repository.dart';
 import 'package:sep490_mobile/repository/genre_repository.dart';
 import 'package:sep490_mobile/repository/ghn_repository.dart';
 import 'package:sep490_mobile/repository/order_detail_repository.dart';
@@ -29,6 +30,7 @@ import 'model/cart_item.dart';
 import 'model/bookshelve.dart';
 import 'model/chapter.dart';
 import 'model/comment.dart';
+import 'model/feedback.dart';
 import 'model/genre.dart';
 import 'model/ghn_models.dart';
 import 'model/order.dart';
@@ -43,6 +45,7 @@ import 'repository/auth_repository.dart';
 import 'repository/book_repository.dart';
 import 'repository/user_repository.dart';
 import 'repository/role_repository.dart';
+import 'util/extensions.dart';
 
 import 'model/user.dart';
 import 'model/role.dart';
@@ -188,6 +191,133 @@ final orderByIdProvider = FutureProvider.family<Order, String>((ref, id) async {
 final orderDetailsByOrderProvider = FutureProvider.family<List<OrderDetail>, String>((ref, oid) async {
   return ref.read(orderDetailRepoProvider).listByOrder(oid);
 });
+
+
+final orderDetailIdForBookProvider = FutureProvider.family<String?, (String userId, String bookId)>(
+      (ref, args) async {
+    final (userId, bookId) = args;
+
+    final orderRepo = ref.read(orderRepoProvider);
+    final orderDetailRepo = ref.read(orderDetailRepoProvider);
+
+    try {
+
+      final orders = await orderRepo.search(
+        userId: userId,
+        status: 'DELIVERED',
+        page: 0,
+        size: 100,
+      );
+
+      for (final order in orders) {
+        final details = await orderDetailRepo.listByOrder(order.orderId);
+        final detail = details.firstWhereOrNull((d) => d.bookId == bookId);
+        if (detail != null) {
+          return detail.orderDetailId;
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print('[orderDetailIdForBookProvider] Error: $e');
+      return null;
+    }
+  },
+);
+
+final hasReviewedProvider = FutureProvider.family<bool, (String userId, String bookId)>(
+      (ref, args) async {
+    final (userId, bookId) = args;
+    final repo = ref.read(feedbackRepoProvider);
+    final list = await repo.search(userId: userId, bookId: bookId);
+    return list.isNotEmpty;
+  },
+);
+
+/// feedbackRepo
+final userFeedbackStatusProvider = FutureProvider.family<
+    ({String? orderDetailId, FeedbackStatus? status, bool hasActive}), (String userId, String bookId)>(
+      (ref, args) async {
+    final (userId, bookId) = args;
+    final feedbackRepo = ref.read(feedbackRepoProvider);
+    final orderRepo = ref.read(orderRepoProvider);
+    final orderDetailRepo = ref.read(orderDetailRepoProvider);
+
+    try {
+      // 1. Check if bought
+      final orders = await orderRepo.search(
+        userId: userId,
+        status: 'DELIVERED',
+        page: 0,
+        size: 100,
+      );
+
+      String? orderDetailId;
+      for (final order in orders) {
+        final details = await orderDetailRepo.listByOrder(order.orderId);
+        final detail = details.firstWhereOrNull((d) => d.bookId == bookId);
+        if (detail != null) {
+          orderDetailId = detail.orderDetailId;
+          break;
+        }
+      }
+
+      if (orderDetailId == null) {
+        return (orderDetailId: null, status: null, hasActive: false);
+      }
+
+      // 2. Check active feedback
+      final feedbacks = await feedbackRepo.search(
+        userId: userId,
+        bookId: bookId,
+        isActived: IsActived.active,
+        page: 0,
+        size: 1,
+      );
+
+      if (feedbacks.isEmpty) {
+        return (orderDetailId: orderDetailId, status: null, hasActive: false);
+      }
+
+      final feedback = feedbacks.first;
+      return (orderDetailId: orderDetailId, status: feedback.status, hasActive: true);
+    } catch (e) {
+      print('[userFeedbackStatusProvider] Error: $e');
+      return (orderDetailId: null, status: null, hasActive: false);
+    }
+  },
+);
+
+/// Provider: Count of PUBLISHED feedbacks
+final publishedFeedbackCountProvider = FutureProvider.family<int, String>(
+      (ref, bookId) async {
+    final repo = ref.read(feedbackRepoProvider);
+    final list = await repo.search(
+      bookId: bookId,
+      isActived: IsActived.active,
+      status: FeedbackStatus.published,
+      page: 0,
+      size: 1,
+    );
+    return list.length;
+  },
+);
+
+/// Provider: Load feedbacks for list page
+final feedbackListProvider = FutureProvider.family<List<BookFeedback>, (String bookId, int page)>(
+      (ref, args) async {
+    final (bookId, page) = args;
+    final repo = ref.read(feedbackRepoProvider);
+    return repo.search(
+      bookId: bookId,
+      isActived: IsActived.active,
+      status: FeedbackStatus.published,
+      page: page,
+      size: 10,
+      sort: ['createdAt,desc'],
+    );
+  },
+);
 
 ///PaymentRepository
 final paymentRepoProvider = Provider<PaymentRepository>(
@@ -369,4 +499,10 @@ final ghnWardsProvider = FutureProvider.autoDispose.family<List<GhnWard>, int>((
   } catch (e) {
     return <GhnWard>[];
   }
+});
+
+
+/// FeedbackRepo
+final feedbackRepoProvider = Provider<FeedbackRepository>((ref) {
+  return FeedbackRepository(ref.watch(dioProvider));
 });
