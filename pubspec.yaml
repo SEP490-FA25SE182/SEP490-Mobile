@@ -27,6 +27,8 @@ dependencies:
   video_player: ^2.9.1
   app_links: ^6.4.1
   just_audio: ^0.9.36
+  flutter_embed_unity: ^1.4.0
+  flutter_embed_unity_6000_0_android: ^1.2.3
 
 dev_dependencies:
   flutter_test:

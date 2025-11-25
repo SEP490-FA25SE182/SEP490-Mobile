@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../firebase_options.dart';
-import '../../model/chapter.dart';
-import '../../model/book.dart';
+import '../../model/marker.dart';
 import '../../model/page.dart';
+import '../../repository/marker_repository.dart';
+import '../../core/config.dart';
 import '../../provider.dart';
 import 'package:go_router/go_router.dart';
 
@@ -28,6 +29,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
   bool _isDarkMode = true;
   late String _themeKey;
   bool _isMuted = false;
+  late final MarkerRepository _markerRepo;
 
   @override
   void initState() {
@@ -35,6 +37,8 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
     _themeKey = 'reader_theme_${widget.bookId}_${widget.chapterId}';
     _audioPlayer = ref.read(audioPlayerProvider);
     _pageController = PageController();
+    final config = AppConfig.fromEnv();
+    _markerRepo = MarkerRepository(config.apiBaseUrl);
     _loadLastPosition();
     _loadTheme();
     _initAudio();
@@ -101,6 +105,52 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
     await prefs.setBool(_themeKey, isDark);
   }
 
+  Future<void> _showArDialogForPage(PageModel page) async {
+    try {
+      final marker = await _markerRepo.findFirstByPageId(page.pageId);
+
+      if (!mounted) return;
+
+      if (marker == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không tìm thấy marker cho trang này')),
+        );
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Trải nghiệm Thực tế tăng cường'),
+          content: const Text(
+            'Bắt đầu trải nghiệm thực tế tăng cường cùng Rookies nào',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Hủy'),
+            ),
+            TextButton(
+              onPressed: () {
+                _audioPlayer.stop();
+                Navigator.of(context).pop();
+                final markerId = marker.markerId;
+
+                context.go('/unity?markerId=$markerId');
+              },
+              child: const Text('Mở AR'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi khi tải marker: $e')),
+      );
+    }
+  }
+
   void _toggleMute() {
     setState(() {
       _isMuted = !_isMuted;
@@ -145,6 +195,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                 onTap: _toggleControls,
                 child: Stack(
                   children: [
+                    // --- NỘI DUNG TRANG ---
                     PageView.builder(
                       controller: _pageController,
                       onPageChanged: (page) {
@@ -176,6 +227,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                       },
                     ),
 
+                    // --- HEADER + AUDIO + NÚT AR (PHÍA TRÊN TRANG) ---
                     if (_showControls)
                       Positioned(
                         top: 0,
@@ -186,13 +238,16 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                           padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
                           child: Column(
                             children: [
+                              // Thanh trên cùng: back + tiêu đề sách + chương
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                                 child: Row(
                                   children: [
                                     IconButton(
-                                      icon: Icon(Icons.arrow_back_ios,
-                                          color: _isDarkMode ? Colors.white : Colors.black),
+                                      icon: Icon(
+                                        Icons.arrow_back_ios,
+                                        color: _isDarkMode ? Colors.white : Colors.black,
+                                      ),
                                       onPressed: () => context.pop(),
                                     ),
                                     Expanded(
@@ -202,17 +257,19 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                           Text(
                                             book.bookName,
                                             style: TextStyle(
-                                                color: _isDarkMode ? Colors.white70 : Colors.black54,
-                                                fontSize: 14),
+                                              color: _isDarkMode ? Colors.white70 : Colors.black54,
+                                              fontSize: 14,
+                                            ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           Text(
                                             chapter.chapterName ?? 'Chương ${chapter.chapterNumber}',
                                             style: TextStyle(
-                                                color: _isDarkMode ? Colors.white : Colors.black,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16),
+                                              color: _isDarkMode ? Colors.white : Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -223,7 +280,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                 ),
                               ),
 
-                              // AUDIO BAR – CÓ NÚT RESTART + AN TOÀN 10s
+                              // AUDIO BAR – NHƯ CŨ
                               Container(
                                 margin: const EdgeInsets.symmetric(horizontal: 32),
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -247,15 +304,13 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                   children: [
                                     Row(
                                       children: [
-                                        // NÚT RESTART MỚI
                                         IconButton(
                                           icon: Icon(Icons.replay,
-                                              size: 28, color: _isDarkMode ? Colors.white70 : Colors.black54),
+                                              size: 28,
+                                              color: _isDarkMode ? Colors.white70 : Colors.black54),
                                           onPressed: _restart,
                                           tooltip: 'Phát lại từ đầu',
                                         ),
-
-                                        // Play/Pause
                                         StreamBuilder<PlayerState>(
                                           stream: _audioPlayer.playerStateStream,
                                           builder: (context, snapshot) {
@@ -266,52 +321,51 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                                 size: 32,
                                                 color: _isDarkMode ? Colors.white : Colors.black,
                                               ),
-                                              onPressed: () => playing ? _audioPlayer.pause() : _audioPlayer.play(),
+                                              onPressed: () =>
+                                              playing ? _audioPlayer.pause() : _audioPlayer.play(),
                                             );
                                           },
                                         ),
-
-                                        // Lùi 10s (an toàn)
                                         IconButton(
                                           icon: Icon(Icons.replay_10,
-                                              size: 28, color: _isDarkMode ? Colors.white70 : Colors.black54),
+                                              size: 28,
+                                              color: _isDarkMode ? Colors.white70 : Colors.black54),
                                           onPressed: _rewind10,
                                         ),
-
-                                        // Thanh tiến trình
                                         Expanded(
                                           child: StreamBuilder<Duration>(
                                             stream: _audioPlayer.positionStream,
                                             builder: (context, snapshot) {
                                               final position = snapshot.data ?? Duration.zero;
                                               final duration = _audioPlayer.duration ?? Duration.zero;
-                                              final max = duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0;
-                                              final value = position.inSeconds.toDouble().clamp(0.0, max);
-
+                                              final max = duration.inSeconds > 0
+                                                  ? duration.inSeconds.toDouble()
+                                                  : 1.0;
+                                              final value =
+                                              position.inSeconds.toDouble().clamp(0.0, max);
                                               return Slider(
                                                 value: value,
                                                 min: 0.0,
                                                 max: max,
                                                 onChanged: duration.inSeconds > 0
-                                                    ? (v) => _audioPlayer.seek(Duration(seconds: v.round()))
+                                                    ? (v) => _audioPlayer
+                                                    .seek(Duration(seconds: v.round()))
                                                     : null,
                                                 activeColor: const Color(0xFF2ECC71),
-                                                inactiveColor: _isDarkMode ? Colors.white24 : Colors.black26,
+                                                inactiveColor:
+                                                _isDarkMode ? Colors.white24 : Colors.black26,
                                               );
                                             },
                                           ),
                                         ),
-
-                                        // Tua 10s (an toàn)
                                         IconButton(
                                           icon: Icon(Icons.forward_10,
-                                              size: 28, color: _isDarkMode ? Colors.white70 : Colors.black54),
+                                              size: 28,
+                                              color: _isDarkMode ? Colors.white70 : Colors.black54),
                                           onPressed: _forward10,
                                         ),
                                       ],
                                     ),
-
-                                    // Dòng thời gian + volume
                                     Row(
                                       children: [
                                         StreamBuilder<Duration>(
@@ -322,8 +376,10 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                             return Text(
                                               '${_formatDuration(position)} / ${_formatDuration(duration)}',
                                               style: TextStyle(
-                                                  color: _isDarkMode ? Colors.white70 : Colors.black54,
-                                                  fontSize: 11),
+                                                color:
+                                                _isDarkMode ? Colors.white70 : Colors.black54,
+                                                fontSize: 11,
+                                              ),
                                             );
                                           },
                                         ),
@@ -336,7 +392,8 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                               child: Icon(
                                                 _isMuted ? Icons.volume_off : Icons.volume_up,
                                                 size: 18,
-                                                color: _isDarkMode ? Colors.white70 : Colors.black54,
+                                                color:
+                                                _isDarkMode ? Colors.white70 : Colors.black54,
                                               ),
                                             ),
                                             const SizedBox(width: 8),
@@ -355,7 +412,9 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                                       setState(() => _isMuted = v == 0.0);
                                                     },
                                                     activeColor: const Color(0xFF2ECC71),
-                                                    inactiveColor: _isDarkMode ? Colors.white24 : Colors.black26,
+                                                    inactiveColor: _isDarkMode
+                                                        ? Colors.white24
+                                                        : Colors.black26,
                                                   );
                                                 },
                                               ),
@@ -367,13 +426,33 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                   ],
                                 ),
                               ),
+
+                              const SizedBox(height: 8),
+
+                              // NÚT AR – THÊM MỚI, PHÍA TRÊN TRANG
+                              if (totalPages > 0)
+                                ElevatedButton(
+                                  onPressed: () {
+                                    final page = pages[_currentPage];
+                                    _showArDialogForPage(page);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24, vertical: 10),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                  ),
+                                  child: const Text('Trải nghiệm Thực tế tăng cường'),
+                                ),
+
                               const SizedBox(height: 12),
                             ],
                           ),
                         ),
                       ),
 
-                    // Nút đổi sáng/tối
+                    // NÚT ĐỔI SÁNG/TỐI (GIỮ NGUYÊN)
                     if (_showControls)
                       Positioned(
                         top: MediaQuery.of(context).padding.top + 16,
@@ -388,7 +467,8 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                             decoration: BoxDecoration(
                               color: _isDarkMode ? Colors.white10 : Colors.black12,
                               shape: BoxShape.circle,
-                              border: Border.all(color: _isDarkMode ? Colors.white24 : Colors.black26),
+                              border: Border.all(
+                                  color: _isDarkMode ? Colors.white24 : Colors.black26),
                             ),
                             child: Icon(
                               _isDarkMode ? Icons.light_mode : Icons.dark_mode,
@@ -399,7 +479,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                         ),
                       ),
 
-                    // Thanh chuyển trang dưới đáy
+                    // THANH CHUYỂN TRANG DƯỚI ĐÁY – NHƯ CŨ
                     if (_showControls)
                       Positioned(
                         bottom: 0,
@@ -413,13 +493,16 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                             children: [
                               IconButton(
                                 icon: Icon(Icons.chevron_left,
-                                    color: _isDarkMode ? Colors.white70 : Colors.black54, size: 36),
+                                    color:
+                                    _isDarkMode ? Colors.white70 : Colors.black54,
+                                    size: 36),
                                 onPressed: _currentPage > 0
                                     ? () => _goToPage(_currentPage - 1, totalPages)
                                     : null,
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                                padding:
+                                const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                                 decoration: BoxDecoration(
                                   color: _isDarkMode ? Colors.white10 : Colors.black12,
                                   borderRadius: BorderRadius.circular(24),
@@ -427,14 +510,17 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                 child: Text(
                                   '${_currentPage + 1} / $totalPages',
                                   style: TextStyle(
-                                      color: _isDarkMode ? Colors.white : Colors.black,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
+                                    color: _isDarkMode ? Colors.white : Colors.black,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                               IconButton(
                                 icon: Icon(Icons.chevron_right,
-                                    color: _isDarkMode ? Colors.white70 : Colors.black54, size: 36),
+                                    color:
+                                    _isDarkMode ? Colors.white70 : Colors.black54,
+                                    size: 36),
                                 onPressed: _currentPage < totalPages - 1
                                     ? () => _goToPage(_currentPage + 1, totalPages)
                                     : null,

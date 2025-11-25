@@ -1,5 +1,8 @@
 allprojects {
     repositories {
+        flatDir {
+            dirs(file("${project(":unityLibrary").projectDir}/libs"))
+        }
         google()
         mavenCentral()
     }

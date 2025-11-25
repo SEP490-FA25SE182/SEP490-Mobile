@@ -28,15 +28,18 @@ class _ScanPageState extends State<ScanPage> {
     final code = cap.barcodes.firstOrNull?.rawValue ?? '';
     if (code.isEmpty) return;
     _handled = true;
-    context.pop(code);
+    // Điều hướng thẳng sang Unity
+    context.go(Uri(path: '/unity-test', queryParameters: {'code': code}).toString());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text('Quét mã'),
         actions: [
           IconButton(
@@ -51,22 +54,12 @@ class _ScanPageState extends State<ScanPage> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          MobileScanner(controller: _ctrl, onDetect: _onDetect),
-          IgnorePointer(
-            child: Center(
-              child: Container(
-                width: 240,
-                height: 240,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white70, width: 2),
-                ),
-              ),
-            ),
-          ),
-        ],
+      body: Positioned.fill(
+        child: MobileScanner(
+          controller: _ctrl,
+          onDetect: _onDetect,
+          fit: BoxFit.cover,
+        ),
       ),
     );
   }

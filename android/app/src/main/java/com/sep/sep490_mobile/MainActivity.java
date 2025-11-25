@@ -1,6 +1,6 @@
 package com.sep.sep490_mobile;
 
-import io.flutter.embedding.android.FlutterActivity;
+import com.learntoflutter.flutter_embed_unity_android.unity.FakeUnityPlayerActivity;
 
-public class MainActivity extends FlutterActivity {
+public class MainActivity extends FakeUnityPlayerActivity {
 }
