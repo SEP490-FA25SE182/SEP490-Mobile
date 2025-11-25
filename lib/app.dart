@@ -21,9 +21,10 @@ import 'package:sep490_mobile/page/order/payment_success_page.dart';
 import 'package:sep490_mobile/page/order/return_page.dart';
 import 'package:sep490_mobile/page/profile/edit_address_page.dart';
 import 'package:sep490_mobile/page/profile/location_page.dart';
+import 'package:sep490_mobile/page/unity/unity_page.dart';
 import 'package:sep490_mobile/page/wallet/deposit_page.dart';
 import 'package:sep490_mobile/page/wallet/wallet_coin_page.dart';
-import 'package:sep490_mobile/page/scan_page.dart';
+import 'package:sep490_mobile/page/unity/scan_page.dart';
 import 'package:sep490_mobile/page/wallet/wallet_help_page.dart';
 import 'package:sep490_mobile/page/wallet/wallet_money_page.dart';
 import 'package:sep490_mobile/page/wallet/withdraw_page.dart';
@@ -133,6 +134,15 @@ GoRouter buildRouter() => GoRouter(
     GoRoute(path: '/orders/feedback/:orderId', builder: (ctx, st) => FeedbackPage(orderId: st.pathParameters['orderId']!),),
     GoRoute(path: '/orders/detail/:orderId', builder: (ctx, st) => OrderDetailPage(orderId: st.pathParameters['orderId'] ?? ''),),
     GoRoute(path: '/orders/refund/:orderId', builder: (ctx, st) => DetailRefundPage(orderId: st.pathParameters['orderId'] ?? ''),),
+    GoRoute(
+      path: '/unity',
+      name: 'unity',
+      builder: (ctx, st) {
+        final markerId = st.uri.queryParameters['markerId'] ?? '';
+        const backendBase = 'http://192.168.1.8:8083';
+        return UnityPage(markerId: markerId, backendBase: backendBase);
+      },
+    ),
   ],
 );
 
