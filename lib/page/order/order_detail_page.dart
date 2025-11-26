@@ -81,6 +81,7 @@ class OrderDetailPage extends ConsumerWidget {
                             style: const TextStyle(color: Colors.redAccent)),
                       ),
                       data: (order) {
+                        debugPrint('>>> order.userAddressId = ${order.userAddressId}');
                         // provider để lấy địa chỉ theo userAddressId
                         final addrAsync = (order.userAddressId == null)
                             ? const AsyncValue<UserAddress?>.data(null)

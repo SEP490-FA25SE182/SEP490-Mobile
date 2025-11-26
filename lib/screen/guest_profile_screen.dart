@@ -36,18 +36,6 @@ class GuestProfileSection extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Nút Scan
-              ButtonSoft(
-                text: 'Scan',
-                onTap: () async {
-                  final result = await context.push<String>('/scan'); 
-                  if (result != null && result.isNotEmpty && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Đã quét: $result')),
-                    );
-                  }
-                },
-              ),
             ],
           ),
         ),
