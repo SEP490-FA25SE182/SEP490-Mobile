@@ -12,7 +12,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus" />
     <!-- ARCore: để required=false để máy không có ARCore vẫn cài được -->
     <uses-feature
-        android:name="android.hardware.camera.ar"
+        android:name="android.hardware.cameraar"
         android:required="false" />
 
     <application
