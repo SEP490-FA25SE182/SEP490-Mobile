@@ -71,6 +71,14 @@ unity/Build/
 unity/Logs/
 unity/MemoryCaptures/
 unity/Builds/
+unity/Rookie/Library/
+unity/Rookie/Temp/
+unity/Rookie/Obj/
+unity/Rookie/Build/
+unity/Rookie/Builds/
+unity/Rookie/Logs/
+unity/Rookie/MemoryCaptures/
+
 
 # Unity as a Library (auto-generated when exporting)
 android/unityLibrary/
