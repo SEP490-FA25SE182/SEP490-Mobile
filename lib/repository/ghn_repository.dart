@@ -95,15 +95,17 @@ class GhnRepository {
   Future<GhnShippingFee> calculateFee(GhnShippingFeeRequestDTO request) async {
     try {
       final res = await _dio.post(
-        '/api/rookie/users/calculate-fee',
+        '/api/rookie/shipping/calculate-fee',
         data: request.toJson(),
         options: Options(contentType: Headers.jsonContentType),
       );
 
+      if (res.data is! Map<String, dynamic>) {
+        throw Exception('Invalid response format from server');
+      }
+
       return GhnShippingFee.fromJson(res.data as Map<String, dynamic>);
-    } on DioException catch (e) {
-      final errorMsg = e.response?.data ?? e.message;
-      print('[GhnRepo] Calculate fee failed: $errorMsg');
+    } on DioException {
       rethrow;
     }
   }
