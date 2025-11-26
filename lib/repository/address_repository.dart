@@ -36,32 +36,36 @@ class AddressRepository {
     String? phoneNumber,
     String? type,
     bool isDefault = false,
+    String? provinceId,
+    String? districtId,
+    String? wardCode,
   }) async {
     try {
-      final body = [
-        {
-          'userId'     : userId,
-          'fullName'   : fullName,
-          'addressInfor': addressInfor,
-          'phoneNumber': phoneNumber,
-          'type'       : type,
-          'isDefault'  : isDefault,
-        }..removeWhere((_, v) => v == null)
-      ];
+      final body = {
+        'userId': userId,
+        'fullName': fullName,
+        'addressInfor': addressInfor,
+        'phoneNumber': phoneNumber,
+        'type': type,
+        'isDefault': isDefault,
+        'provinceId': provinceId,
+        'districtId': districtId,
+        'wardCode': wardCode,
+      }..removeWhere((_, v) => v == null);
 
       final res = await _dio.post(
         '/api/rookie/users/addresses',
-        data: body,
+        data: [body],
         options: Options(contentType: Headers.jsonContentType),
       );
 
-      // server trả về List<UserAddressResponse>
       final list = (res.data as List)
           .map((e) => UserAddress.fromJson((e as Map).cast<String, dynamic>()))
           .toList();
 
       return list.first;
     } on DioException catch (e) {
+      debugPrint('[AddressRepo] create ERROR: ${e.response?.data}');
       mapDioError(e);
     }
   }
@@ -73,13 +77,19 @@ class AddressRepository {
         required String addressInfor,
         String? phoneNumber,
         String? type,
+        String? provinceId,
+        String? districtId,
+        String? wardCode,
       }) async {
     try {
       final body = <String, dynamic>{
-        'fullName'    : fullName,
+        'fullName': fullName,
         'addressInfor': addressInfor,
-        'phoneNumber' : phoneNumber,
-        'type'        : type,
+        'phoneNumber': phoneNumber,
+        'type': type,
+        'provinceId': provinceId,
+        'districtId': districtId,
+        'wardCode': wardCode,
       }..removeWhere((_, v) => v == null);
 
       final res = await _dio.put(
@@ -90,8 +100,7 @@ class AddressRepository {
 
       return UserAddress.fromJson((res.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
-      debugPrint('[AddressRepo] update ERROR '
-          'status=${e.response?.statusCode} url=${e.requestOptions.uri} data=${e.response?.data}');
+      debugPrint('[AddressRepo] update ERROR: ${e.response?.data}');
       mapDioError(e);
     }
   }
