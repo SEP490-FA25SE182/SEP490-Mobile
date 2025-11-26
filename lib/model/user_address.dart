@@ -14,6 +14,10 @@ class UserAddress {
   final DateTime? updatedAt;
   final IsActived isActived;
 
+  final String? provinceId;
+  final String? districtId;
+  final String? wardCode;
+
   const UserAddress({
     required this.userAddressId,
     required this.addressInfor,
@@ -25,7 +29,13 @@ class UserAddress {
     this.createdAt,
     this.updatedAt,
     this.isActived = IsActived.ACTIVE,
+    this.provinceId,
+    this.districtId,
+    this.wardCode,
   });
+
+  int get districtIdInt => int.tryParse(districtId ?? '0') ?? 0;
+  String get wardCodeSafe => wardCode?.isNotEmpty == true ? wardCode! : '0';
 
   static bool _readBool(dynamic v) {
     if (v == null) return false;
@@ -48,6 +58,9 @@ class UserAddress {
       createdAt: parseInstant(j['createdAt']),
       updatedAt: parseInstant(j['updatedAt']),
       isActived: parseIsActived(j['isActived']),
+      provinceId: j['provinceId']?.toString(),
+      districtId: j['districtId']?.toString(),
+      wardCode: j['wardCode']?.toString(),
     );
   }
 
@@ -58,10 +71,13 @@ class UserAddress {
     'fullName': fullName,
     'type': type,
     'userId': userId,
-    'default': isDefault,
+    'isDefault': isDefault,
     'createdAt': createdAt?.toIso8601String(),
     'updatedAt': updatedAt?.toIso8601String(),
     'isActived': isActivedToJson(isActived),
+    'provinceId': provinceId,
+    'districtId': districtId,
+    'wardCode': wardCode,
   };
 
   UserAddress copyWith({
@@ -75,6 +91,9 @@ class UserAddress {
     DateTime? createdAt,
     DateTime? updatedAt,
     IsActived? isActived,
+    String? provinceId,
+    String? districtId,
+    String? wardCode,
   }) {
     return UserAddress(
       userAddressId: userAddressId ?? this.userAddressId,
@@ -87,6 +106,9 @@ class UserAddress {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActived: isActived ?? this.isActived,
+      provinceId: provinceId ?? this.provinceId,
+      districtId: districtId ?? this.districtId,
+      wardCode: wardCode ?? this.wardCode,
     );
   }
 }
