@@ -359,7 +359,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                   final result = await context.push('/location', extra: userId);
                   if (result is UserAddress) {
                     setState(() => _selectedAddress = result);
-                    ref.read(checkoutSelectedAddressProvider.notifier).state = result;
+                    ref.read(checkoutSelectedAddressIdProvider.notifier).state = result.userAddressId;
                   }
                 },
                 child: const SizedBox(
@@ -410,11 +410,11 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     );
   }
 
-  // ← Updated to accept final total
+  //Updated to accept final total
   Future<void> _onPlaceOrder(Order order, double finalTotal, AsyncValue<dynamic> shippingFeeAsync) async {
     if (_method == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Hãy chọn phương thức thanh toán đi nà')),
+        const SnackBar(content: Text('Hãy chọn phương thức thanh toán')),
       );
       return;
     }
@@ -429,22 +429,25 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     }
 
     setState(() => _placing = true);
+
     try {
+      // RECALCULATE REAL TOTAL (same as UI)
+      final shippingFee = shippingFeeAsync.value?.total ?? 30000;
+      final isFreeShipping = order.totalPrice >= 300000;
+      final realTotal = isFreeShipping ? order.totalPrice : order.totalPrice + shippingFee;
+
+      // UPDATE ORDER IN DB WITH CORRECT TOTAL + ADDRESS (ALL METHODS)
+      await ref.read(orderRepoProvider).update(
+        order.orderId,
+        userAddressId: addressId,
+        totalPrice: realTotal,   // This is the key: save real amount
+        status: order.status,
+      );
+
+      // Refresh order in cache so future reads get updated total
+      ref.invalidate(orderByIdProvider(order.orderId));
+
       if (_method == _PayMethod.payos) {
-        // Calculate real total (same as UI)
-        final shippingFee = shippingFeeAsync.value?.total ?? 30000;
-        final isFreeShipping = order.totalPrice >= 300000;
-        final realTotal = isFreeShipping ? order.totalPrice : order.totalPrice + shippingFee;
-
-        // Step 1: Update order with correct totalPrice + address
-        await ref.read(orderRepoProvider).update(
-          order.orderId,
-          userAddressId: addressId,
-          totalPrice: realTotal,  // This makes PayOS charge correct amount
-          status: order.status,
-        );
-
-        // Step 2: Create PayOS link (backend will read updated totalPrice)
         final returnUrl = 'rookies://payment/success?orderId=${order.orderId}';
         final cancelUrl = 'rookies://payment/cancel?orderId=${order.orderId}';
 
@@ -457,17 +460,14 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
         if (!mounted) return;
         final ok = await launchUrl(Uri.parse(res.checkoutUrl), mode: LaunchMode.externalApplication);
         if (!ok) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Không mở được link thanh toán')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không mở được link thanh toán')),
+          );
         }
-      } else if (_method == _PayMethod.cod) {
-        await ref.read(orderRepoProvider).update(
-          order.orderId,
-          userAddressId: addressId,
-          status: order.status,
-        );
-
+      }
+      else if (_method == _PayMethod.cod) {
         await ref.read(transactionRepoProvider).createCOD(
-          totalPrice: finalTotal,
+          totalPrice: realTotal,
           status: 0,
           orderId: order.orderId,
         );
@@ -477,41 +477,34 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
           const SnackBar(content: Text('Đặt hàng thành công')),
         );
         context.go('/orders/pending');
-      } else if (_PayMethod.wallet == _method) {
-        final me = ref.read(currentUserIdProvider);
-        if (me == null || me.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Bạn cần đăng nhập để dùng ví Rookies')),
-          );
-          return;
-        }
-
+      }
+      else if (_method == _PayMethod.wallet) {
+        final me = ref.read(currentUserIdProvider)!;
         final wallet = await ref.read(walletRepoProvider).getByUserId(me);
-        final balance = wallet?.balance ?? 0.0;
-        if (wallet == null || balance < finalTotal) {
+
+        if (wallet == null || wallet.balance < realTotal) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Số dư ví không đủ')),
           );
           return;
         }
 
+        // Mark order as paid
         await ref.read(orderRepoProvider).update(
           order.orderId,
-          userAddressId: addressId,
-          status: 2,
+          status: 2, // paid
         );
 
         await ref.read(transactionRepoProvider).createWallet(
-          totalPrice: finalTotal,
+          totalPrice: realTotal,
           status: 3,
           orderId: order.orderId,
           walletId: wallet.walletId,
         );
 
-        final newBalance = balance - finalTotal;
         await ref.read(walletRepoProvider).update(
           wallet.walletId,
-          balance: newBalance,
+          balance: wallet.balance - realTotal,
         );
 
         if (!mounted) return;
@@ -521,21 +514,15 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
         context.go('/orders/processing');
       }
     } on DioException catch (e) {
-      final sc = e.response?.statusCode;
-      final data = e.response?.data;
-      final msg = (data is Map && data['message'] is String)
-          ? data['message'] as String
-          : e.message ?? 'Unknown error';
+      final msg = e.response?.data is Map
+          ? (e.response?.data as Map)['message'] ?? 'Lỗi server'
+          : e.message ?? 'Lỗi không xác định';
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đặt hàng thất bại ($sc): $msg')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $msg')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đặt hàng thất bại: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đặt hàng thất bại: $e')));
       }
     } finally {
       if (mounted) setState(() => _placing = false);

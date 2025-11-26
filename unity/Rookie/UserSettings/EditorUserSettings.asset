@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!162 &1
+EditorUserSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 4
+  m_ConfigSettings:
+    GraphicsSettingsInspector_UserSettings:
+      value: 18134705175a055722080a3115371d4a0d55006876786860616b0471b8b66376bbb36fb0bf6b69646056ba6f556d1c73b01a001bf30703051428e8021dcb090314eb19c81f8a455efe1715dad438dfe4dcd8d1a4eaeee9dcdbcda9fcf3bedbf6fce7a0e9b9a9f08e9fa1f7a7aad0d4c5cdf8b2cac8c3dbf7b3c2d4dfb7ddd7f2cac580c29b9a
+      flags: 0
+    RecentlyUsedSceneGuid-0:
+      value: 55090c5e5d045a5d5f0c087b15770a42471541287d7b72632c2b1b63e1b6643e
+      flags: 0
+    RecentlyUsedSceneGuid-1:
+      value: 5154525450065f0d540b097511700f441416482c7c2e72697a7d4e6bb6e1643a
+      flags: 0
+    RecentlyUsedSceneGuid-2:
+      value: 5602565254055b0c0c5b552148770844154e19792a7876637e7e1e6ae7b3356f
+      flags: 0
+    RecentlyUsedSceneGuid-3:
+      value: 5302055553560b0f585f0f2447710f44124f4e2b747873662e281f64e0b6673e
+      flags: 0
+    RecentlyUsedSceneGuid-4:
+      value: 535752570404585a0e5a5f204573594417164d782d2e70607c2d4965e7b1373b
+      flags: 0
+    RecentlyUsedSceneGuid-5:
+      value: 5555040503075d020c0c5e7247730f4440164a7d7c7177357a7a4964e3b8616d
+      flags: 0
+    RecentlyUsedSceneGuid-6:
+      value: 05500d0752530b0a090c0870117108444316482c2a2d75632e7d1c67bbb33269
+      flags: 0
+    RecentlyUsedSceneGuid-7:
+      value: 070552505c565e5d5a595d7a49205e44174f1e7e2e2a2463742b4d37e3b4613c
+      flags: 0
+    vcSharedLogLevel:
+      value: 0d5e400f0650
+      flags: 0
+  m_VCAutomaticAdd: 1
+  m_VCDebugCom: 0
+  m_VCDebugCmd: 0
+  m_VCDebugOut: 0
+  m_SemanticMergeMode: 2
+  m_DesiredImportWorkerCount: 5
+  m_StandbyImportWorkerCount: 2
+  m_IdleImportWorkerShutdownDelay: 60000
+  m_VCShowFailedCheckout: 1
+  m_VCOverwriteFailedCheckoutAssets: 1
+  m_VCProjectOverlayIcons: 1
+  m_VCHierarchyOverlayIcons: 1
+  m_VCOtherOverlayIcons: 1
+  m_VCAllowAsyncUpdate: 1
+  m_VCScanLocalPackagesOnConnect: 1
+  m_ArtifactGarbageCollection: 1
+  m_CompressAssetsOnImport: 1
