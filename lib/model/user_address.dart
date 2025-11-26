@@ -34,6 +34,9 @@ class UserAddress {
     this.wardCode,
   });
 
+  int get districtIdInt => int.tryParse(districtId ?? '0') ?? 0;
+  String get wardCodeSafe => wardCode?.isNotEmpty == true ? wardCode! : '0';
+
   static bool _readBool(dynamic v) {
     if (v == null) return false;
     if (v is bool) return v;

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:sep490_mobile/repository/address_repository.dart';
@@ -32,7 +33,11 @@ import 'model/chapter.dart';
 import 'model/comment.dart';
 import 'model/feedback.dart';
 import 'model/genre.dart';
+import 'model/ghn_category_dto.dart';
 import 'model/ghn_models.dart';
+import 'model/ghn_shipping.dart';
+import 'model/ghn_shipping_fee.dart';
+import 'model/ghn_shipping_fee_request_dto.dart';
 import 'model/order.dart';
 import 'model/order_detail.dart';
 import 'model/page.dart';
@@ -95,7 +100,6 @@ final roleByIdProvider = FutureProvider.family<Role, String>((ref, id) {
 ///BookRepository
 final bookRepoProvider  = Provider<BookRepository>((ref) => BookRepository(ref.watch(dioProvider)));
 
-// Lấy 1 sách theo id
 final bookByIdProvider = FutureProvider.family<Book, String>((ref, id) async {
   return ref.read(bookRepoProvider).getById(id);
 });
@@ -244,7 +248,6 @@ final userFeedbackStatusProvider = FutureProvider.family<
     final orderDetailRepo = ref.read(orderDetailRepoProvider);
 
     try {
-      // 1. Check if bought
       final orders = await orderRepo.search(
         userId: userId,
         status: 'DELIVERED',
@@ -266,7 +269,6 @@ final userFeedbackStatusProvider = FutureProvider.family<
         return (orderDetailId: null, status: null, hasActive: false);
       }
 
-      // 2. Check active feedback
       final feedbacks = await feedbackRepo.search(
         userId: userId,
         bookId: bookId,
@@ -505,4 +507,92 @@ final ghnWardsProvider = FutureProvider.autoDispose.family<List<GhnWard>, int>((
 /// FeedbackRepo
 final feedbackRepoProvider = Provider<FeedbackRepository>((ref) {
   return FeedbackRepository(ref.watch(dioProvider));
+});
+
+/// Checkout-only selected address (page scope)
+final checkoutSelectedAddressProvider = StateProvider<UserAddress?>((ref) => null);
+
+/// Get selected or default address ID
+final selectedOrDefaultAddressIdProvider = Provider.family<String?, String>((ref, userId) {
+  final addressesAsync = ref.watch(addressesByUserProvider(userId));
+  final list = addressesAsync.value ?? [];
+  if (list.isEmpty) return null;
+
+  final selected = ref.watch(checkoutSelectedAddressProvider);
+  if (selected != null) return selected.userAddressId;
+
+  final defaultAddr = list.firstWhere((a) => a.isDefault, orElse: () => list.first);
+  return defaultAddr.userAddressId;
+});
+
+/// Shipping fee calculator
+final shippingFeeProvider = FutureProvider.family<GhnShippingFee?, String>((ref, orderId) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null || userId.isEmpty) return null;
+
+  final orderAsync = ref.watch(orderByIdProvider(orderId));
+  final detailsAsync = ref.watch(orderDetailsByOrderProvider(orderId));
+
+  final order = orderAsync.value;
+  final details = detailsAsync.value;
+  if (order == null || details == null || details.isEmpty) return null;
+
+  // Get selected address
+  final addressId = ref.read(selectedOrDefaultAddressIdProvider(userId));
+  if (addressId == null) return null;
+
+  final addressAsync = ref.watch(addressByIdProvider(addressId));
+  final address = addressAsync.value;
+  if (address == null || address.districtIdInt == 0 || address.wardCodeSafe == '0') {
+    return null;
+  }
+
+  final bookIds = details.map((d) => d.bookId).toList();
+  final books = <String, String>{};
+  for (final id in bookIds) {
+    final bookAsync = ref.watch(bookByIdProvider(id));
+    final book = bookAsync.value;
+    if (book != null) {
+      books[id] = book.bookName;
+    }
+  }
+
+  final itemCount = details.fold<int>(0, (sum, d) => sum + d.quantity);
+
+  const fromDistrictId = 3695;
+  const fromWardCode = "90752";
+
+  final request = GhnShippingFeeRequestDTO(
+    serviceTypeId: 2,
+    fromDistrictId: fromDistrictId,
+    fromWardCode: fromWardCode,
+    toDistrictId: address.districtIdInt,
+    toWardCode: address.wardCodeSafe,
+    length: 25,
+    width: 25,
+    height: (5 * itemCount).clamp(5, 200),
+    weight: (300 * itemCount).clamp(300, 1600000),
+    insuranceValue: order.totalPrice.round(),
+    codValue: order.totalPrice.round(),
+    items: details.map((d) {
+      final title = books[d.bookId] ?? "Sách";
+      return GhnItemDTO(
+        name: title,
+        quantity: d.quantity,
+        price: d.price.round(),
+        length: 25,
+        width: 25,
+        height: 5,
+        weight: 300,
+        category: const GhnCategoryDTO(level1: "Book"),
+      );
+    }).toList(),
+  );
+
+  try {
+    return await ref.read(ghnRepositoryProvider).calculateFee(request);
+  } catch (e) {
+    debugPrint('GHN calculate fee error: $e');
+    return null;
+  }
 });

@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import '../model/ghn_models.dart';
+import '../model/ghn_shipping_fee.dart';
+import '../model/ghn_shipping_fee_request_dto.dart';
 
 class GhnRepository {
   final Dio _dio;
@@ -87,6 +89,22 @@ class GhnRepository {
     } catch (e, s) {
       debugPrint('GHN Wards Error: $e\n$s');
       return [];
+    }
+  }
+
+  Future<GhnShippingFee> calculateFee(GhnShippingFeeRequestDTO request) async {
+    try {
+      final res = await _dio.post(
+        '/api/rookie/users/calculate-fee',
+        data: request.toJson(),
+        options: Options(contentType: Headers.jsonContentType),
+      );
+
+      return GhnShippingFee.fromJson(res.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      final errorMsg = e.response?.data ?? e.message;
+      print('[GhnRepo] Calculate fee failed: $errorMsg');
+      rethrow;
     }
   }
 }
