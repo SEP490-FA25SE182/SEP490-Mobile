@@ -121,7 +121,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
         padding: EdgeInsets.only(
           left: 28,
           right: 28,
-          top: _showControls ? 180 : 70,
+          top: _showControls ? 220 : 50,
           bottom: _showControls ? 100 : 70,
         ),
         child: Html(
@@ -255,15 +255,43 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(book.bookName,
-                                              style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54, fontSize: 14),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis),
-                                          Text(chapter.chapterName ?? 'Chương ${chapter.chapterNumber}',
-                                              style: TextStyle(
-                                                  color: _isDarkMode ? Colors.white : Colors.black,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16)),
+                                          Text(
+                                            book.bookName,
+                                            style: TextStyle(
+                                                color: _isDarkMode ? Colors.white70 : Colors.black54,
+                                                fontSize: 14),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Consumer(
+                                            builder: (context, ref, child) {
+                                              final pages = ref.watch(pagesWithMediaProvider(widget.chapterId));
+                                              return pages.when(
+                                                data: (pageList) {
+                                                  if (pageList.isEmpty) return const SizedBox();
+                                                  final currentPageModel = pageList[_currentPage];
+                                                  final pageNum = currentPageModel.pageNumber ?? _currentPage + 1;
+                                                  return Text(
+                                                    '${chapter.chapterName ?? 'Chương ${chapter.chapterNumber}'} – Trang $pageNum',
+                                                    style: TextStyle(
+                                                      color: _isDarkMode ? Colors.white : Colors.black,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  );
+                                                },
+                                                loading: () => Text(
+                                                  chapter.chapterName ?? 'Chương ${chapter.chapterNumber}',
+                                                  style: TextStyle(
+                                                      color: _isDarkMode ? Colors.white : Colors.black,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 16),
+                                                ),
+                                                error: (_, __) => const SizedBox(),
+                                              );
+                                            },
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -324,7 +352,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                     // Bottom Page Indicator
                     if (_showControls)
                       Positioned(
-                        bottom: 30,
+                        bottom: 20,
                         left: 0,
                         right: 0,
                         child: Row(
