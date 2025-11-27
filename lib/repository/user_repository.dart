@@ -1,10 +1,16 @@
 import 'package:dio/dio.dart';
+import 'package:sep490_mobile/repository/role_repository.dart';
 import '../core/api_client.dart';
 import '../model/user.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../provider.dart';
 
 class UserRepository {
   final Dio _dio;
-  UserRepository(this._dio);
+  final Ref? ref;
+
+  UserRepository(this._dio, [this.ref]);
 
   /// GET /api/rookie/users/{id}
   Future<User> getProfile(String userId) async {
@@ -53,6 +59,44 @@ class UserRepository {
     } on DioException catch (e) {
       mapDioError(e);
       return null;
+    }
+  }
+
+
+  Future<List<User>> getAllAuthors() async {
+    try {
+      String? authorRoleId;
+
+      if (ref != null) {
+        authorRoleId = await ref!.read(authorRoleIdProvider.future);
+      }
+
+      if (authorRoleId == null) {
+        final roleRepo = RoleRepository(_dio);
+        authorRoleId = await roleRepo.getAuthorRoleId();
+      }
+
+      if (authorRoleId == null) {
+        print('Không tìm thấy roleId của Author');
+        return [];
+      }
+
+      final res = await _dio.get(
+        '/api/rookie/users/search',
+        queryParameters: {
+          'roleId': authorRoleId,
+          'isActived': 'ACTIVE',
+          'size': 200,
+        },
+      );
+
+      final content = (res.data['content'] as List?) ?? [];
+      return content
+          .map((e) => User.fromJson((e as Map).cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      mapDioError(e);
+      return [];
     }
   }
 }
