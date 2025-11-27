@@ -530,6 +530,9 @@ final shippingFeeProvider = FutureProvider.family<GhnShippingFee?, String>((ref,
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null || userId.isEmpty) return null;
 
+  // THIS IS THE KEY: listen to selected address in checkout
+  final selectedAddressId = ref.watch(checkoutSelectedAddressIdProvider);
+
   final orderAsync = ref.watch(orderByIdProvider(orderId));
   final detailsAsync = ref.watch(orderDetailsByOrderProvider(orderId));
 
@@ -537,35 +540,31 @@ final shippingFeeProvider = FutureProvider.family<GhnShippingFee?, String>((ref,
   final details = detailsAsync.value;
   if (order == null || details == null || details.isEmpty) return null;
 
-  // Get selected address
-  final addressId = ref.read(selectedOrDefaultAddressIdProvider(userId));
+  // Get current selected or default address
+  String? addressId;
+  if (selectedAddressId != null) {
+    addressId = selectedAddressId;
+  } else {
+    addressId = ref.read(selectedOrDefaultAddressIdProvider(userId));
+  }
+
   if (addressId == null) return null;
 
   final addressAsync = ref.watch(addressByIdProvider(addressId));
   final address = addressAsync.value;
-  if (address == null || address.districtIdInt == 0 || address.wardCodeSafe == '0') {
-    return null;
-  }
+  if (address == null) return null;
 
-  final bookIds = details.map((d) => d.bookId).toList();
-  final books = <String, String>{};
-  for (final id in bookIds) {
-    final bookAsync = ref.watch(bookByIdProvider(id));
-    final book = bookAsync.value;
-    if (book != null) {
-      books[id] = book.bookName;
-    }
+  // Invalidate if address has invalid GHN data
+  if (address.districtIdInt == 0 || address.wardCodeSafe == '0' || address.wardCodeSafe.isEmpty) {
+    return GhnShippingFee(total: 30000); // fallback
   }
 
   final itemCount = details.fold<int>(0, (sum, d) => sum + d.quantity);
 
-  const fromDistrictId = 3695;
-  const fromWardCode = "90752";
-
   final request = GhnShippingFeeRequestDTO(
     serviceTypeId: 2,
-    fromDistrictId: fromDistrictId,
-    fromWardCode: fromWardCode,
+    fromDistrictId: 3695,
+    fromWardCode: "90752",
     toDistrictId: address.districtIdInt,
     toWardCode: address.wardCodeSafe,
     length: 25,
@@ -575,9 +574,9 @@ final shippingFeeProvider = FutureProvider.family<GhnShippingFee?, String>((ref,
     insuranceValue: order.totalPrice.round(),
     codValue: order.totalPrice.round(),
     items: details.map((d) {
-      final title = books[d.bookId] ?? "Sách";
+      final bookName = ref.read(bookByIdProvider(d.bookId)).value?.bookName ?? "Sách";
       return GhnItemDTO(
-        name: title,
+        name: bookName,
         quantity: d.quantity,
         price: d.price.round(),
         length: 25,
@@ -592,7 +591,9 @@ final shippingFeeProvider = FutureProvider.family<GhnShippingFee?, String>((ref,
   try {
     return await ref.read(ghnRepositoryProvider).calculateFee(request);
   } catch (e) {
-    debugPrint('GHN calculate fee error: $e');
-    return null;
+    debugPrint('GHN fee error: $e');
+    return GhnShippingFee(total: 30000);
   }
 });
+
+final checkoutSelectedAddressIdProvider = StateProvider<String?>((ref) => null);
