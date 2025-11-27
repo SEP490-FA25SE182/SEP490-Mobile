@@ -209,7 +209,6 @@ class _CartPageState extends ConsumerState<CartPage> {
                       onCheckout: () => _onCheckout(
                         uid: uid,
                         cartId: cartId,
-                        allIds: allIds,
                         usePoints: _useCoin, // truyền qua BE
                       ),
                       onDeleteSelected: () async {
@@ -258,7 +257,6 @@ class _CartPageState extends ConsumerState<CartPage> {
   Future<void> _onCheckout({
     required String uid,
     required String cartId,
-    required Set<String> allIds,
     required bool usePoints,
   }) async {
     if (_checked.isEmpty) {
@@ -266,25 +264,6 @@ class _CartPageState extends ConsumerState<CartPage> {
         const SnackBar(content: Text('Bạn chưa chọn sản phẩm.')),
       );
       return;
-    }
-
-    // API moveCartToOrder hiện tạo đơn từ TOÀN BỘ giỏ.
-    if (_checked.length != allIds.length) {
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Tạo đơn từ toàn bộ giỏ?'),
-          content: const Text(
-            'Hệ thống sẽ tạo đơn hàng từ toàn bộ giỏ (không chỉ các mục đã chọn). '
-                'Bạn có muốn tiếp tục không?',
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Tiếp tục')),
-          ],
-        ),
-      );
-      if (proceed != true) return;
     }
 
     // lấy ví
@@ -296,11 +275,15 @@ class _CartPageState extends ConsumerState<CartPage> {
       return;
     }
 
+    // list cartItemId đã tick
+    final selectedIds = _checked.toList();
+
     setState(() => _creatingOrder = true);
     try {
       final order = await ref.read(orderRepoProvider).moveCartToOrder(
         cartId: cartId,
         walletId: wallet.walletId,
+        cartItemIds: selectedIds, // <-- truyền list id xuống BE
         usePoints: usePoints,
       );
 

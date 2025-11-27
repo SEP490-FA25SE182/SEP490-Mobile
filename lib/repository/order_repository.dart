@@ -10,15 +10,18 @@ class OrderRepository {
   OrderRepository(this._dio);
 
   /// POST /api/rookie/users/orders/from-cart/{cartId}/wallet/{walletId}?usePoints={bool}
+  /// Body: ["cartItemId-1", "cartItemId-2", ...]
   Future<Order> moveCartToOrder({
     required String cartId,
     required String walletId,
+    required List<String> cartItemIds,
     bool usePoints = false,
   }) async {
     final url = '/api/rookie/users/orders/from-cart/$cartId/wallet/$walletId';
     final res = await _dio.post(
       url,
       queryParameters: {'usePoints': usePoints},
+      data: cartItemIds, // gửi list id xuống BE
       options: Options(contentType: Headers.jsonContentType),
     );
     return Order.fromJson((res.data as Map).cast<String, dynamic>());
