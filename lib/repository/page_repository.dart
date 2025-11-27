@@ -15,7 +15,7 @@ class PageRepository {
     List<String>? sort,
     String? search,
     String? chapterId,
-    String? isActived, // "ACTIVE" or "INACTIVE"
+    String? isActived,
   }) async {
     try {
       final queryParameters = <String, dynamic>{
