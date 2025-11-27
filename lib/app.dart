@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sep490_mobile/page/blog/blog_detail_page.dart';
+import 'package:sep490_mobile/page/book/advanced_search_page.dart';
 import 'package:sep490_mobile/page/book/book_detail_page.dart';
 import 'package:sep490_mobile/page/book/book_show_page.dart';
 import 'package:sep490_mobile/page/book/page_read.dart';
@@ -79,6 +80,7 @@ GoRouter buildRouter() => GoRouter(
   routes: [
     GoRoute(path: '/',        name: 'home',    builder: (_, __) => const HomePage()),
     GoRoute(path: '/booklist', name: 'booklist', builder: (_, __) => const BookListPage()),
+    GoRoute(path: '/advanced-search', name: 'advanced_search', builder: (context, state) => const AdvancedSearchPage(),),
     GoRoute(path: '/blogs',   name: 'blogs',   builder: (_, __) => const BlogPage()),
     GoRoute(path: '/cart',    name: 'cart',    builder: (_, __) => const CartPage()),
     GoRoute(path: '/library',    name: 'library',    builder: (_, __) => const BookshelvePage()),

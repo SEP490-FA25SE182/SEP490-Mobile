@@ -116,6 +116,11 @@ void invalidateUserCache(WidgetRef ref, String? userId) {
   }
 }
 
+final allAuthorsProvider = FutureProvider<List<User>>((ref) async {
+  final userRepo = ref.read(userRepoProvider);
+  return await userRepo.getAllAuthors();
+});
+
 ///RoleRepository
 final roleRepoProvider = Provider<RoleRepository>(
       (ref) => RoleRepository(ref.read(dioProvider)),
@@ -123,6 +128,17 @@ final roleRepoProvider = Provider<RoleRepository>(
 
 final roleByIdProvider = FutureProvider.family<Role, String>((ref, id) {
   return ref.read(roleRepoProvider).getById(id);
+});
+
+final authorRoleIdProvider = FutureProvider<String?>((ref) async {
+  final roleRepo = ref.read(roleRepoProvider);
+  final roleId = await roleRepo.getAuthorRoleId();
+
+  if (roleId != null) {
+    ref.keepAlive();
+  }
+
+  return roleId;
 });
 
 ///BookRepository

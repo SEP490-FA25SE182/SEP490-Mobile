@@ -14,7 +14,7 @@ class GenreRepository {
   }) async {
     try {
       final res = await _dio.get(
-        '/api/rookie/genres',
+        '/api/rookie/users/genres',
         queryParameters: {
           'page': page,
           'size': size,
