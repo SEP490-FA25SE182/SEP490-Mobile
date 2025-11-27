@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../model/book.dart';
+import '../../provider.dart';
 import '../../repository/order_repository.dart';
 import 'favorite_books_tab.dart';
 import 'my_books_tab.dart';
@@ -16,7 +17,6 @@ class BookshelvePage extends ConsumerStatefulWidget {
 class _BookshelvePageState extends ConsumerState<BookshelvePage> {
   int _selectedTab = 0;
 
-  final favoriteBooksPageIndexProvider = StateProvider<int>((_) => 0);
 
   @override
   Widget build(BuildContext context) {
@@ -71,11 +71,6 @@ class _BookshelvePageState extends ConsumerState<BookshelvePage> {
               child: _selectedTab == 0
                   ? FavoriteBooksTab(
                 key: const ValueKey('fav'),
-                onPageChange: (delta) {
-                  ref
-                      .read(favoriteBooksPageIndexProvider.notifier)
-                      .update((state) => state + delta);
-                },
               )
                   : const MyBooksTab(key: ValueKey('mine')),
             ),
@@ -85,18 +80,22 @@ class _BookshelvePageState extends ConsumerState<BookshelvePage> {
           Consumer(
             builder: (context, ref, _) {
               if (_selectedTab == 0) {
-                // Favorite tab: dùng page index cũ (nếu cần)
-                final page = ref.watch(favoriteBooksPageIndexProvider);
-                return _buildOldPagination(page, ref, isFavorite: true);
+                // TAB YÊU THÍCH
+                final asyncPage = ref.watch(favoriteBooksProvider);
+                return asyncPage.when(
+                  data: (page) => _buildPagination(page, ref, isFavorite: true),
+                  loading: () => const SizedBox(height: 50),
+                  error: (_, __) => const Text('Lỗi tải', style: TextStyle(color: Colors.red)),
+                );
+              } else {
+                // TAB SÁCH CỦA BẠN
+                final asyncPage = ref.watch(myBooksProvider);
+                return asyncPage.when(
+                  data: (page) => _buildPagination(page, ref, isFavorite: false),
+                  loading: () => const SizedBox(height: 50),
+                  error: (_, __) => const Text('Lỗi tải', style: TextStyle(color: Colors.red)),
+                );
               }
-
-              // My Books tab: dùng phân trang thật từ API
-              final asyncPage = ref.watch(myBooksProvider);
-              return asyncPage.when(
-                data: (page) => _buildRealPagination(page, ref),
-                loading: () => const SizedBox(height: 50),
-                error: (_, __) => const SizedBox(height: 50),
-              );
             },
           ),
         ],
@@ -104,87 +103,76 @@ class _BookshelvePageState extends ConsumerState<BookshelvePage> {
     );
   }
 
-  // Pagination cho Favorite tab (giữ nguyên như cũ)
-  Widget _buildOldPagination(int page, WidgetRef ref, {required bool isFavorite}) {
+  Widget _buildPagination(PageResponse<Book> page, WidgetRef ref, {required bool isFavorite}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          IconButton(
-            icon: const Icon(Icons.first_page, color: Colors.white70),
-            onPressed: page > 0
-                ? () => ref.read(favoriteBooksPageIndexProvider.notifier).state = 0
-                : null,
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_left, color: Colors.white70),
-            onPressed: page > 0
-                ? () => ref.read(favoriteBooksPageIndexProvider.notifier).state--
-                : null,
-          ),
-          Text(
-            'Trang ${page + 1}',
-            style: const TextStyle(color: Colors.white),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right, color: Colors.white70),
-            onPressed: () {
-              ref.read(favoriteBooksPageIndexProvider.notifier).state++;
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.last_page, color: Colors.white70),
-            onPressed: null, // chưa biết tổng trang
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Pagination cho My Books tab (dùng dữ liệu thật từ API)
-  Widget _buildRealPagination(PageResponse<Book> page, WidgetRef ref) {
-    if (page.totalPages <= 1) {
-      return const SizedBox(height: 50);
-    }
-
-    final currentState = ref.read(myBooksStateProvider);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+          // First page
           IconButton(
             icon: const Icon(Icons.first_page, color: Colors.white70),
             onPressed: page.page > 0
-                ? () => ref.read(myBooksStateProvider.notifier).state =
-                currentState.copyWith(page: 0)
+                ? () {
+              if (isFavorite) {
+                ref.read(favoriteBooksPageProvider.notifier).state = 0;
+              } else {
+                final state = ref.read(myBooksStateProvider);
+                ref.read(myBooksStateProvider.notifier).state = state.copyWith(page: 0);
+              }
+            }
                 : null,
           ),
+
+          // Previous
           IconButton(
             icon: const Icon(Icons.chevron_left, color: Colors.white70),
             onPressed: page.page > 0
-                ? () => ref.read(myBooksStateProvider.notifier).state =
-                currentState.copyWith(page: page.page - 1)
+                ? () {
+              if (isFavorite) {
+                ref.read(favoriteBooksPageProvider.notifier).state = page.page - 1;
+              } else {
+                final state = ref.read(myBooksStateProvider);
+                ref.read(myBooksStateProvider.notifier).state = state.copyWith(page: page.page - 1);
+              }
+            }
                 : null,
           ),
+
+          // Page info
           Text(
-            'Trang ${page.page + 1} / ${page.totalPages}',
-            style: const TextStyle(color: Colors.white, fontSize: 15),
+            'Trang ${page.page + 1} / ${page.totalPages > 0 ? page.totalPages : '?'}',
+            style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
           ),
+
+          // Next
           IconButton(
             icon: const Icon(Icons.chevron_right, color: Colors.white70),
             onPressed: !page.isLast
-                ? () => ref.read(myBooksStateProvider.notifier).state =
-                currentState.copyWith(page: page.page + 1)
+                ? () {
+              if (isFavorite) {
+                ref.read(favoriteBooksPageProvider.notifier).state = page.page + 1;
+              } else {
+                final state = ref.read(myBooksStateProvider);
+                ref.read(myBooksStateProvider.notifier).state = state.copyWith(page: page.page + 1);
+              }
+            }
                 : null,
           ),
+
+          // Last page
           IconButton(
             icon: const Icon(Icons.last_page, color: Colors.white70),
             onPressed: !page.isLast
-                ? () => ref.read(myBooksStateProvider.notifier).state =
-                currentState.copyWith(page: page.totalPages - 1)
+                ? () {
+              final lastPage = page.totalPages - 1;
+              if (isFavorite) {
+                ref.read(favoriteBooksPageProvider.notifier).state = lastPage;
+              } else {
+                final state = ref.read(myBooksStateProvider);
+                ref.read(myBooksStateProvider.notifier).state = state.copyWith(page: lastPage);
+              }
+            }
                 : null,
           ),
         ],

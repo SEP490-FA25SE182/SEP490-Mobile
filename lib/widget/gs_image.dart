@@ -30,8 +30,6 @@ class GsImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final httpUrl = url.startsWith('gs://') ? gsToHttp(url) : url;
 
-    // debug để biết URL đã được convert đúng chưa
-    // ignore: avoid_print
     print('[GsImage] $url  ->  $httpUrl');
 
     return Image.network(

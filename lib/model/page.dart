@@ -1,5 +1,7 @@
 import 'package:meta/meta.dart';
 import '../util/model.dart';
+import 'audio.dart';
+import 'illustration.dart';
 
 @immutable
 class PageModel {
@@ -10,6 +12,8 @@ class PageModel {
   final DateTime? createdAt;
   final String? isActived;
   final String chapterId;
+  final List<IllustrationModel> illustrations;
+  final List<AudioModel> audios;
 
   const PageModel({
     required this.pageId,
@@ -19,6 +23,8 @@ class PageModel {
     this.createdAt,
     this.isActived,
     required this.chapterId,
+    this.illustrations = const [],
+    this.audios = const [],
   });
 
   factory PageModel.fromJson(Map<String, dynamic> j) {
@@ -32,6 +38,8 @@ class PageModel {
       createdAt: parseInstant(j['createdAt']),
       isActived: j['isActived']?.toString(),
       chapterId: (j['chapterId'] ?? '').toString(),
+      illustrations: [],
+      audios: [],
     );
   }
 
