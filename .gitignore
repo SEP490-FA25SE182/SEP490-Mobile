@@ -46,3 +46,44 @@ app.*.map.json
 
 
 firebase.json
+
+# Flutter
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android
+android/.gradle/
+android/app/build/
+android/local.properties
+android/.idea/
+
+# iOS
+ios/Pods/
+ios/Runner.xcworkspace/
+
+# Unity build folders
+unity/Library/
+unity/Temp/
+unity/Obj/
+unity/Build/
+unity/Logs/
+unity/MemoryCaptures/
+unity/Builds/
+unity/Rookie/Library/
+unity/Rookie/Temp/
+unity/Rookie/Obj/
+unity/Rookie/Build/
+unity/Rookie/Builds/
+unity/Rookie/Logs/
+unity/Rookie/MemoryCaptures/
+
+
+# Unity as a Library (auto-generated when exporting)
+android/unityLibrary/
+
+# OS files
+.DS_Store
+Thumbs.db
+
