@@ -17,8 +17,14 @@ class BookListNotifier extends StateNotifier<AsyncValue<List<Book>>> {
   static const int _pageSize = 20;
   bool _hasNext = true;
   bool _hasPrevious = false;
+
+
   String _searchQuery = '';
-  String? _genreId;
+  List<String> _genreIds = [];
+  double? _minPrice;
+  double? _maxPrice;
+  String? _authorId;
+
   List<Book> _books = [];
 
   BookListNotifier(this._repo) : super(const AsyncLoading()) {
@@ -38,12 +44,15 @@ class BookListNotifier extends StateNotifier<AsyncValue<List<Book>>> {
       final newBooks = await _repo.list(
         page: _currentPage,
         size: _pageSize,
-        search: _searchQuery,
-        genreId: _genreId,
+        search: _searchQuery.isEmpty ? null : _searchQuery,
+        genreIds: _genreIds.isEmpty ? null : _genreIds,
+        minPrice: _minPrice,
+        maxPrice: _maxPrice,
+        authorId: _authorId,
         sort: 'createdAt-desc',
       );
 
-      _books = newBooks;
+      _books = reset ? newBooks : [..._books, ...newBooks];
       _hasNext = newBooks.length == _pageSize;
       _hasPrevious = _currentPage > 0;
       state = AsyncData(List.from(_books));
@@ -67,10 +76,8 @@ class BookListNotifier extends StateNotifier<AsyncValue<List<Book>>> {
   }
 
   void firstPage() {
-    if (_currentPage != 0) {
-      _currentPage = 0;
-      fetchBooks();
-    }
+    _currentPage = 0;
+    fetchBooks(reset: true);
   }
 
   void search(String query) {
@@ -79,10 +86,28 @@ class BookListNotifier extends StateNotifier<AsyncValue<List<Book>>> {
   }
 
   void filterByGenre(String? genreId) {
-    _genreId = genreId;
+    _genreIds = genreId == null ? [] : [genreId];
     fetchBooks(reset: true);
   }
 
+  // Advanced search
+  void applyAdvancedFilters({
+    String? query,
+    List<String>? genreIds,
+    double? minPrice,
+    double? maxPrice,
+    String? authorId,
+  }) {
+    _searchQuery = query ?? '';
+    _genreIds = genreIds ?? [];
+    _minPrice = minPrice;
+    _maxPrice = maxPrice;
+    _authorId = authorId;
+
+    fetchBooks(reset: true);
+  }
+
+  // === GETTER ===
   int get currentPage => _currentPage;
   bool get hasNext => _hasNext;
   bool get hasPrevious => _hasPrevious;
@@ -148,8 +173,38 @@ class _BookListPageState extends ConsumerState<BookListPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            _GenreFilterDropdown(onChanged: notifier.filterByGenre),
+
+
+            const SizedBox(height: 8),
+
+            GestureDetector(
+              onTap: () async {
+                final result = await context.push('/advanced-search');
+                if (result == true) {
+                  ref.read(bookListProvider.notifier).fetchBooks(reset: true);
+                }
+              },
+              child: const Row(
+                children: [
+                  Icon(Icons.tune, color: Color(0xFF2ECC71), size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Tìm kiếm nâng cao',
+                    style: TextStyle(
+                      color: Color(0xFF2ECC71),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            //_GenreFilterDropdown(onChanged: notifier.filterByGenre),
+
+
             const SizedBox(height: 16),
             Expanded(
               child: booksAsync.when(

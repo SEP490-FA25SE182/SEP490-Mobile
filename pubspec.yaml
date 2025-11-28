@@ -26,7 +26,7 @@ dependencies:
   url_launcher: ^6.3.0
   video_player: ^2.9.1
   app_links: ^6.4.1
-  just_audio: ^0.9.36
+  just_audio: ^0.9.40
   flutter_embed_unity: ^1.4.0
   flutter_embed_unity_6000_0_android: ^1.2.3
   flutter_html: ^3.0.0-beta.2

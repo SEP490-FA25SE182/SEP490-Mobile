@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:sep490_mobile/repository/address_repository.dart';
+import 'package:sep490_mobile/repository/audio_repository.dart';
 import 'package:sep490_mobile/repository/blog_repository.dart';
 import 'package:sep490_mobile/repository/cart_item_repository.dart';
 import 'package:sep490_mobile/repository/cart_repository.dart';
@@ -10,8 +12,12 @@ import 'package:sep490_mobile/repository/comment_repository.dart';
 import 'package:sep490_mobile/repository/feedback_repository.dart';
 import 'package:sep490_mobile/repository/genre_repository.dart';
 import 'package:sep490_mobile/repository/ghn_repository.dart';
+import 'package:sep490_mobile/repository/illustration_repository.dart';
 import 'package:sep490_mobile/repository/order_detail_repository.dart';
 import 'package:sep490_mobile/repository/order_repository.dart';
+import 'package:sep490_mobile/repository/page_audio_repository.dart';
+import 'package:sep490_mobile/repository/page_illustration_repository.dart';
+import 'package:sep490_mobile/repository/page_repository.dart';
 import 'package:sep490_mobile/repository/payment_method_repository.dart';
 import 'package:sep490_mobile/repository/payment_repository.dart';
 import 'package:sep490_mobile/repository/bookshelve_repository.dart';
@@ -23,7 +29,9 @@ import 'package:sep490_mobile/repository/wallet_repository.dart';
 import 'package:sep490_mobile/util/trans_type.dart';
 import 'core/config.dart';
 import 'core/api_client.dart';
+import 'core/env.dart';
 import 'core/secure_store.dart';
+import 'model/audio.dart';
 import 'model/blog.dart';
 import 'model/book.dart';
 import 'model/cart.dart';
@@ -38,6 +46,7 @@ import 'model/ghn_models.dart';
 import 'model/ghn_shipping.dart';
 import 'model/ghn_shipping_fee.dart';
 import 'model/ghn_shipping_fee_request_dto.dart';
+import 'model/illustration.dart';
 import 'model/order.dart';
 import 'model/order_detail.dart';
 import 'model/page.dart';
@@ -56,12 +65,31 @@ import 'model/user.dart';
 import 'model/role.dart';
 
 // Config & core
-final configProvider = Provider<AppConfig>((_) => AppConfig.fromEnv());
+// final configProvider = Provider<AppConfig>((_) => AppConfig.fromEnv());
 final secureStoreProvider = Provider<SecureStore>((_) => SecureStore());
+
 final dioProvider = Provider<Dio>((ref) {
-  final cfg = ref.watch(configProvider);
-  final store = ref.watch(secureStoreProvider);
-  return buildDio(cfg, store);
+  if (Env.isDevelopment) {
+    return ref.read(dioGatewayProvider);
+  }
+  return ref.read(dioGatewayProvider);
+});
+
+final apiClientProvider = Provider<ApiClient>((ref) {
+  final secureStore = ref.read(secureStoreProvider);
+  return ApiClient(secureStore);
+});
+
+final dioGatewayProvider = Provider<Dio>((ref) {
+  return ref.read(apiClientProvider).gateway();
+});
+
+final dioPageProvider = Provider<Dio>((ref) {
+  return ref.read(apiClientProvider).pageService();
+});
+
+final dioMediaProvider = Provider<Dio>((ref) {
+  return ref.read(apiClientProvider).mediaService();
 });
 
 /// AuthRepository
@@ -88,6 +116,11 @@ void invalidateUserCache(WidgetRef ref, String? userId) {
   }
 }
 
+final allAuthorsProvider = FutureProvider<List<User>>((ref) async {
+  final userRepo = ref.read(userRepoProvider);
+  return await userRepo.getAllAuthors();
+});
+
 ///RoleRepository
 final roleRepoProvider = Provider<RoleRepository>(
       (ref) => RoleRepository(ref.read(dioProvider)),
@@ -95,6 +128,17 @@ final roleRepoProvider = Provider<RoleRepository>(
 
 final roleByIdProvider = FutureProvider.family<Role, String>((ref, id) {
   return ref.read(roleRepoProvider).getById(id);
+});
+
+final authorRoleIdProvider = FutureProvider<String?>((ref) async {
+  final roleRepo = ref.read(roleRepoProvider);
+  final roleId = await roleRepo.getAuthorRoleId();
+
+  if (roleId != null) {
+    ref.keepAlive();
+  }
+
+  return roleId;
 });
 
 ///BookRepository
@@ -327,7 +371,7 @@ final paymentRepoProvider = Provider<PaymentRepository>(
 );
 
 
-//Bookshelve
+/// Bookshelve Repo
 final bookshelveRepoProvider = Provider<BookshelveRepository>((ref) {
   final dio = ref.watch(dioProvider);
   return BookshelveRepository(dio);
@@ -336,7 +380,7 @@ final bookshelveRepoProvider = Provider<BookshelveRepository>((ref) {
 
 final bookshelveSearchProvider = StateProvider<String>((_) => '');
 
-// provider family: input = userId
+/// Bookshelve Page
 final bookshelvesProvider = FutureProvider.family<List<Bookshelve>, String>((ref, userId) async {
   final repo = ref.watch(bookshelveRepoProvider);
   final q = ref.watch(bookshelveSearchProvider);
@@ -352,6 +396,62 @@ final bookshelvesProvider = FutureProvider.family<List<Bookshelve>, String>((ref
 final booksByShelfProvider = FutureProvider.family<List<Book>, String>((ref, shelfId) async {
   final repo = ref.watch(bookRepoProvider);
   return repo.getBooksByShelfId(shelfId, sort: ['createdAt-desc']);
+});
+
+final favoriteBooksPageProvider = StateProvider<int>((ref) => 0);
+
+final favoriteBooksProvider = FutureProvider.autoDispose<PageResponse<Book>>((ref) async {
+  final page = ref.watch(favoriteBooksPageProvider);
+  final size = 20;
+
+  final userIdRaw = ref.watch(currentUserIdProvider);
+  if (userIdRaw == null) {
+    return PageResponse<Book>(
+      content: const [],
+      page: page,
+      size: size,
+      totalPages: 1,
+      totalElements: 0,
+      isLast: true,
+    );
+  }
+  final userId = userIdRaw;
+
+  final bookshelveRepo = ref.read(bookshelveRepoProvider);
+
+  // LẤY KỆ YÊU THÍCH
+  final newestShelf = await bookshelveRepo.getNewestByUser(userId);
+  if (newestShelf?.bookshelveId == null || newestShelf!.bookshelveId!.isEmpty) {
+    return PageResponse<Book>(
+      content: const [],
+      page: page,
+      size: size,
+      totalPages: 1,
+      totalElements: 0,
+      isLast: true,
+    );
+  }
+
+  final shelfId = newestShelf.bookshelveId!;
+
+  // LẤY SÁCH TRONG KỆ
+  final books = await ref.read(bookRepoProvider).getBooksByShelfId(
+    shelfId,
+    page: page,
+    size: size,
+    sort: ['createdAt-desc'],
+  );
+
+  final hasMore = books.length == size;
+
+  return PageResponse<Book>(
+    content: books,
+    page: page,
+    size: size,
+    totalPages: hasMore ? page + 2 : page + 1,
+    totalElements: books.length,
+    isLast: !hasMore,
+  );
 });
 
 // Check if book in favorite shelf
@@ -597,3 +697,130 @@ final shippingFeeProvider = FutureProvider.family<GhnShippingFee?, String>((ref,
 });
 
 final checkoutSelectedAddressIdProvider = StateProvider<String?>((ref) => null);
+
+
+/// PageRepo
+final pageRepositoryProvider = Provider<PageRepository>((ref) {
+  return PageRepository(ref.watch(dioProvider));
+});
+
+final currentPageIndexProvider = StateProvider<int>((ref) => 0);
+
+/// get illu
+final pagesWithIllustrationsProvider = FutureProvider.family<List<PageModel>, String>((ref, chapterId) async {
+  final pageRepo = ref.read(pageRepositoryProvider);
+  final piRepo = PageIllustrationRepository(ref.read(dioMediaProvider));
+  final illusRepo = IllustrationRepository(ref.read(dioMediaProvider));
+
+  final pages = await pageRepo.getByChapterId(chapterId);
+
+  final pageIds = pages.map((p) => p.pageId).toList();
+
+  final piFutures = pageIds.map((id) => piRepo.getByPageId(id));
+  final piResults = await Future.wait(piFutures);
+
+  final Set<String> allIllusIds = {};
+  final Map<String, List<String>> pageToIllusIds = {};
+
+  for (int i = 0; i < pageIds.length; i++) {
+    final illusIds = piResults[i].map((pi) => pi.illustrationId).toList();
+    pageToIllusIds[pageIds[i]] = illusIds;
+    allIllusIds.addAll(illusIds);
+  }
+
+  final illusMap = allIllusIds.isEmpty
+      ? <String, IllustrationModel>{}
+      : await illusRepo.getManyByIds(allIllusIds.toList());
+
+  return pages.map((page) {
+    final illusIds = pageToIllusIds[page.pageId] ?? [];
+    final illustrations = illusIds
+        .map((id) => illusMap[id])
+        .whereType<IllustrationModel>()
+        .toList();
+
+    return PageModel(
+      pageId: page.pageId,
+      pageNumber: page.pageNumber,
+      content: page.content,
+      chapterId: page.chapterId,
+      illustrations: illustrations,
+    );
+  }).toList()
+    ..sort((a, b) => a.pageNumber.compareTo(b.pageNumber));
+});
+
+/// GetAudio
+final pagesWithMediaProvider = FutureProvider.family<List<PageModel>, String>((ref, chapterId) async {
+  final pageRepo = ref.read(pageRepositoryProvider);
+  final illusRepo = PageIllustrationRepository(ref.read(dioMediaProvider));
+  final audioLinkRepo = PageAudioRepository(ref.read(dioMediaProvider));
+  final illusDetailRepo = IllustrationRepository(ref.read(dioMediaProvider));
+  final audioDetailRepo = AudioRepository(ref.read(dioMediaProvider));
+
+  // Get all pages of chapter
+  final pages = await pageRepo.getByChapterId(chapterId);
+  if (pages.isEmpty) return [];
+
+  final pageIds = pages.map((p) => p.pageId).toList();
+
+  // Get illustration links + audio links
+  final illusLinkFutures = pageIds.map((id) => illusRepo.getByPageId(id));
+  final audioLinkFutures = pageIds.map((id) => audioLinkRepo.getByPageId(id));
+  final illusLinksList = await Future.wait(illusLinkFutures);
+  final audioLinksList = await Future.wait(audioLinkFutures);
+
+  // Get all necessary id
+  final Set<String> allIllusIds = {};
+  final Set<String> allAudioIds = {};
+  final Map<String, List<String>> pageToIllusIds = {};
+  final Map<String, List<String>> pageToAudioIds = {};
+
+  for (int i = 0; i < pageIds.length; i++) {
+    final iIds = illusLinksList[i].map((e) => e.illustrationId).toList();
+    final aIds = audioLinksList[i].map((e) => e.audioId).toList();
+
+    pageToIllusIds[pageIds[i]] = iIds;
+    pageToAudioIds[pageIds[i]] = aIds;
+
+    allIllusIds.addAll(iIds);
+    allAudioIds.addAll(aIds);
+  }
+
+  // Get illu and audio
+  final illusMap = await illusDetailRepo.getManyByIds(allIllusIds.toList());
+  final audioMap = await audioDetailRepo.getManyByIds(allAudioIds.toList());
+
+  // 5. Add to PageModel
+  return pages.map((page) {
+    final illustrations = (pageToIllusIds[page.pageId] ?? [])
+        .map((id) => illusMap[id])
+        .whereType<IllustrationModel>()
+        .toList();
+
+    final audios = (pageToAudioIds[page.pageId] ?? [])
+        .map((id) => audioMap[id])
+        .whereType<AudioModel>()
+        .toList();
+
+    return PageModel(
+      pageId: page.pageId,
+      pageNumber: page.pageNumber,
+      content: page.content,
+      chapterId: page.chapterId,
+      illustrations: illustrations,
+      audios: audios,
+    );
+  }).toList()
+    ..sort((a, b) => a.pageNumber.compareTo(b.pageNumber));
+});
+
+
+/// Audio
+final audioPlayerProvider = Provider<AudioPlayer>((ref) {
+  final player = AudioPlayer();
+
+  // Tự động dispose khi không dùng
+  ref.onDispose(() => player.dispose());
+  return player;
+});
