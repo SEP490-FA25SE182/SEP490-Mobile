@@ -43,15 +43,32 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
     _pageController = PageController();
     _markerRepo = MarkerRepository(AppConfig.fromEnv().apiBaseUrl);
     _loadTheme();
-    _loadLastPosition();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_currentPage == 0) {
+      _loadLastPositionSafe();
+    }
+  }
+
+
   // Load vị trí đã đọc
-  Future<void> _loadLastPosition() async {
+  Future<void> _loadLastPositionSafe() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getInt('read_pos_${widget.bookId}_${widget.chapterId}') ?? 0;
 
-    final pages = await ref.read(pagesWithMediaProvider(widget.chapterId).future);
+    // Dùng Future.microtask để đảm bảo PageView đã attach
+    await Future.microtask(() => null);
+
+    if (!mounted) return;
+    if (!_pageController.hasClients) return;
+
+    final pages = ref.read(pagesWithMediaProvider(widget.chapterId)).value;
+    if (pages == null || pages.isEmpty) return;
+
     if (saved > 0 && saved < pages.length) {
       _pageController.jumpToPage(saved);
       setState(() => _currentPage = saved);
@@ -121,7 +138,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
         padding: EdgeInsets.only(
           left: 28,
           right: 28,
-          top: _showControls ? 220 : 50,
+          top: _showControls ? 180 : 50,
           bottom: _showControls ? 100 : 70,
         ),
         child: Html(
@@ -203,7 +220,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
               if (pages.isEmpty) {
                 return const Center(child: Text('Chương trống', style: TextStyle(color: Colors.grey)));
               }
-
+              final currentPageModel = pages[_currentPage];
               return GestureDetector(
                 onTap: _toggleControls,
                 child: Stack(
@@ -220,12 +237,15 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                       itemBuilder: (context, index) {
                         final page = pages[index];
 
-                        if (page.illustrations.isNotEmpty) {
+                        final bool showText = page.isTextPage;
+                        final bool showImage = page.isPicturePage;
+
+                        if (showImage && page.illustrations.isNotEmpty) {
                           return _buildImagePage(page.illustrations.first.imageUrl);
-                        } else if (page.content?.trim().isNotEmpty == true) {
+                        } else if (showText && page.content?.trim().isNotEmpty == true) {
                           return _buildTextPage(page);
                         } else {
-                          return const Center(child: Text('Trang trống'));
+                          return const Center(child: Text('Trang trống', style: TextStyle(color: Colors.grey)));
                         }
                       },
                     ),
@@ -299,29 +319,34 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                 ),
                               ),
 
-                              // Audio Player
-                              BookAudioPlayer(
-                                bookId: widget.bookId,
-                                chapterId: widget.chapterId,
-                                isDarkMode: _isDarkMode,
-                              ),
 
-                              const SizedBox(height: 8),
 
-                              // AR Button
-                              ElevatedButton.icon(
-                                icon: const Icon(Icons.view_in_ar, size: 20),
-                                label: const Text('Trải nghiệm AR'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF2ECC71),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                              if (currentPageModel.isTextPage)
+                                BookAudioPlayer(
+                                  bookId: widget.bookId,
+                                  chapterId: widget.chapterId,
+                                  isDarkMode: _isDarkMode,
                                 ),
-                                onPressed: () => _showArDialogForPage(pages[_currentPage]),
-                              ),
 
-                              const SizedBox(height: 12),
+                              if (currentPageModel.isPicturePage)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                                  child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.view_in_ar, size: 20),
+                                    label: const Text('Trải nghiệm AR', style: TextStyle(fontSize: 16)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF2ECC71),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                                      elevation: 10,
+                                    ),
+                                    onPressed: () => _showArDialogForPage(currentPageModel),
+                                  ),
+                                ),
+
+                              if (currentPageModel.isTextPage || currentPageModel.isPicturePage)
+                                const SizedBox(height: 12),
                             ],
                           ),
                         ),
