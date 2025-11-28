@@ -157,7 +157,7 @@ class _DetailBody extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.white24, width: .8),
                   ),
-                  child: Text('#$label', style: const TextStyle(color: Colors.white)),
+                  child: Text('$label', style: const TextStyle(color: Colors.white)),
                 );
               }).toList(),
             ),

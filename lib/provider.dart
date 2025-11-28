@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:sep490_mobile/repository/address_repository.dart';
+import 'package:sep490_mobile/repository/answer_repository.dart';
 import 'package:sep490_mobile/repository/audio_repository.dart';
 import 'package:sep490_mobile/repository/blog_repository.dart';
 import 'package:sep490_mobile/repository/cart_item_repository.dart';
@@ -23,6 +24,9 @@ import 'package:sep490_mobile/repository/payment_repository.dart';
 import 'package:sep490_mobile/repository/bookshelve_repository.dart';
 import 'package:sep490_mobile/repository/genre_repository.dart';
 import 'package:sep490_mobile/repository/notification_repository.dart';
+import 'package:sep490_mobile/repository/question_repository.dart';
+import 'package:sep490_mobile/repository/quiz_repository.dart';
+import 'package:sep490_mobile/repository/quiz_result_repository.dart';
 import 'package:sep490_mobile/repository/transaction_repository.dart';
 import 'package:sep490_mobile/repository/vn_location_repository.dart';
 import 'package:sep490_mobile/repository/wallet_repository.dart';
@@ -31,6 +35,7 @@ import 'core/config.dart';
 import 'core/api_client.dart';
 import 'core/env.dart';
 import 'core/secure_store.dart';
+import 'model/answer.dart';
 import 'model/audio.dart';
 import 'model/blog.dart';
 import 'model/book.dart';
@@ -51,6 +56,10 @@ import 'model/order.dart';
 import 'model/order_detail.dart';
 import 'model/page.dart';
 import 'model/payment_method.dart';
+import 'model/question.dart';
+import 'model/quiz.dart';
+import 'model/quiz_play.dart';
+import 'model/quiz_result.dart';
 import 'model/transaction.dart';
 import 'model/user_address.dart';
 import 'model/vn_location.dart';
@@ -186,7 +195,7 @@ final blogRepoProvider = Provider<BlogRepository>((ref) => BlogRepository(ref.re
 final blogByIdProvider =
 FutureProvider.family<Blog, String>((ref, id) => ref.read(blogRepoProvider).getById(id));
 
-
+///GrenreRepository
 final genreRepoProvider = Provider<GenreRepository>((ref) {
   final dio = ref.watch(dioProvider);
   return GenreRepository(dio);
@@ -823,4 +832,50 @@ final audioPlayerProvider = Provider<AudioPlayer>((ref) {
   // Tự động dispose khi không dùng
   ref.onDispose(() => player.dispose());
   return player;
+});
+
+/// QuizRepository
+final quizRepoProvider =
+Provider<QuizRepository>((ref) => QuizRepository(ref.read(dioProvider)));
+
+// GET by id
+final quizByIdProvider =
+FutureProvider.family<Quiz, String>((ref, id) {
+  return ref.read(quizRepoProvider).getById(id);
+});
+
+// Quiz play data (quiz + questions + answers)
+final quizPlayProvider =
+FutureProvider.family<QuizPlay, String>((ref, id) {
+  return ref.read(quizRepoProvider).getPlayData(id);
+});
+
+/// QuestionRepository
+final questionRepoProvider =
+Provider<QuestionRepository>(
+        (ref) => QuestionRepository(ref.read(dioProvider)));
+
+final questionByIdProvider =
+FutureProvider.family<Question, String>((ref, id) {
+  return ref.read(questionRepoProvider).getById(id);
+});
+
+/// AnswerRepository
+final answerRepoProvider =
+Provider<AnswerRepository>(
+        (ref) => AnswerRepository(ref.read(dioProvider)));
+
+final answerByIdProvider =
+FutureProvider.family<Answer, String>((ref, id) {
+  return ref.read(answerRepoProvider).getById(id);
+});
+
+/// UserQuizResultRepository
+final userQuizResultRepoProvider =
+Provider<UserQuizResultRepository>(
+        (ref) => UserQuizResultRepository(ref.read(dioProvider)));
+
+final userQuizResultByIdProvider =
+FutureProvider.family<UserQuizResult, String>((ref, id) {
+  return ref.read(userQuizResultRepoProvider).getById(id);
 });

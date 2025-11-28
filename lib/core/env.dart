@@ -1,5 +1,5 @@
 class Env {
-  static const String _defaultIp = '10.0.2.2';
+  static const String _defaultIp = '192.168.1.66';
   static const String _defaultGatewayUrl = 'http://$_defaultIp:8080';
   static const String _defaultUrl = 'http://$_defaultIp:8081';
   static const String _defaultPageServiceUrl = 'http://$_defaultIp:8081';

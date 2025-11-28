@@ -6,7 +6,7 @@ class AppConfig {
   factory AppConfig.fromEnv() => AppConfig(
     apiBaseUrl: const String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'http://192.168.1.201:8081',
+      defaultValue: 'http://192.168.1.66:8081',
     ),
     env: const String.fromEnvironment('APP_ENV', defaultValue: 'dev'),
   );
