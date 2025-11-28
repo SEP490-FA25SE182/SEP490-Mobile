@@ -78,6 +78,25 @@ class MyBooksTab extends ConsumerWidget {
           ),
         ),
 
+        // Nút Scan
+        // ButtonSoft(
+        //   text: 'Scan',
+        //   onTap: () async {
+        //     final result = await context.push<String>('/scan');
+        //     if (result != null && result.isNotEmpty && context.mounted) {
+        //       ScaffoldMessenger.of(context).showSnackBar(
+        //         SnackBar(content: Text('Đã quét: $result')),
+        //       );
+        //     }
+        //   },
+        // ),
+        ButtonSoft(
+          text: 'Scan',
+          onTap: () async {
+            context.go('/unity');
+          },
+        ),
+
         // Content
         Expanded(
           child: booksAsync.when(

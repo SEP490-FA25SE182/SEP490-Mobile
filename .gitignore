@@ -43,6 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/pubspec.lock
+/android/app/google-services.json
+unity/
+/android/unityLibrary/
+
 
 # Environment variables
 .env
@@ -85,6 +90,8 @@ unity/Rookie/MemoryCaptures/
 
 # Unity as a Library (auto-generated when exporting)
 android/unityLibrary/
+android/app/src/main/res/mipmap-*/ic_rookie.png
+
 
 # OS files
 .DS_Store
