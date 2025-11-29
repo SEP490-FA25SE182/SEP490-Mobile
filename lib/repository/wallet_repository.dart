@@ -12,9 +12,15 @@ class WalletRepository {
     try {
       final res = await _dio.get('/api/rookie/users/wallets/user/$userId');
       return Wallet.fromJson((res.data as Map).cast<String, dynamic>());
-    } on DioException catch (_) {
-      // Không có ví -> trả null
-      return null;
+    } on DioException catch (e) {
+      final code = e.response?.statusCode ?? 0;
+      final body = e.response?.data?.toString() ?? '';
+
+      // 404 -> chưa có ví
+      if (code == 404 || body.contains('Wallet not found')) {
+        return null;
+      }
+      rethrow;
     }
   }
 

@@ -15,36 +15,13 @@ class WalletCoinPage extends ConsumerStatefulWidget {
 }
 
 class _WalletCoinPageState extends ConsumerState<WalletCoinPage> {
-  bool _creating = false;
-
-  Future<void> _createWallet(String userId) async {
-    if (_creating) return;
-    setState(() => _creating = true);
-    try {
-      await ref.read(walletRepoProvider).createOne(userId: userId, coin: 0, balance: 0);
-      ref.invalidate(walletByUserProvider(userId));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tạo ví thành công')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không thể tạo ví: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _creating = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final userId = ref.watch(currentUserIdProvider);
     final asyncWallet = (userId == null || userId.isEmpty)
         ? const AsyncValue<Wallet?>.data(null)
-        : ref.watch(walletByUserProvider(userId));
+        : ref.watch(ensuredWalletByUserProvider(userId)).whenData((w) => w);
 
     const iconGs = 'gs://sep490-fa25se182.firebasestorage.app/icon/coin-bag.png';
     const yellow = Color(0xFFFFD54F);
@@ -115,7 +92,6 @@ class _WalletCoinPageState extends ConsumerState<WalletCoinPage> {
                             style: const TextStyle(color: Colors.redAccent)),
                       ),
                       data: (wallet) {
-                        final hasWallet = wallet != null;
                         final coins = wallet?.coin ?? 0;
                         final coinText = NumberFormat.decimalPattern('vi_VN').format(coins);
 
@@ -123,7 +99,7 @@ class _WalletCoinPageState extends ConsumerState<WalletCoinPage> {
                           children: [
                             const SizedBox(height: 12),
                             Container(
-                              height: 120, // gradient to hơn
+                              height: 120,
                               margin: const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(6),
@@ -145,65 +121,28 @@ class _WalletCoinPageState extends ConsumerState<WalletCoinPage> {
                                       fit: BoxFit.contain,
                                     ),
                                     const SizedBox(width: 14),
-                                    if (hasWallet)
-                                      RichText(
-                                        text: TextSpan(
-                                          children: [
-                                            TextSpan(
-                                              text: coinText,
-                                              style: const TextStyle(
-                                                color: yellow,
-                                                fontSize: 30,
-                                                fontWeight: FontWeight.w900,
-                                              ),
-                                            ),
-                                            const TextSpan(
-                                              text: '  Xu khả dụng',
-                                              style: TextStyle(
-                                                color: yellow,
-                                                fontSize: 16.5,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ]
-                                        ),
-                                      )
-                                    else
-                                      SizedBox(
-                                        height: 44,
-                                        child: ElevatedButton(
-                                          onPressed: _creating
-                                              ? null
-                                              : () => _createWallet(userId),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.white.withOpacity(0.18),
-                                            foregroundColor: yellow,
-                                            elevation: 0,
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 18, vertical: 10),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(10),
-                                              side: const BorderSide(color: yellow, width: 1),
+                                    RichText(
+                                      text: TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: coinText,
+                                            style: const TextStyle(
+                                              color: yellow,
+                                              fontSize: 30,
+                                              fontWeight: FontWeight.w900,
                                             ),
                                           ),
-                                          child: _creating
-                                              ? const SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation(yellow),
-                                            ),
-                                          )
-                                              : const Text(
-                                            'Tạo ví ngay nào',
+                                          const TextSpan(
+                                            text: '  Xu khả dụng',
                                             style: TextStyle(
+                                              color: yellow,
+                                              fontSize: 16.5,
                                               fontWeight: FontWeight.w700,
-                                              letterSpacing: 0.2,
                                             ),
                                           ),
-                                        ),
+                                        ],
                                       ),
+                                    ),
                                   ],
                                 ),
                               ),

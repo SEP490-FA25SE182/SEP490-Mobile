@@ -402,17 +402,24 @@ class BookDetailPage extends ConsumerWidget {
                 return;
               }
               try {
-                final cartRepo = ref.read(cartRepoProvider);
-                final cartItemRepo = ref.read(cartItemRepoProvider);
-                Cart? cart = await cartRepo.getByUserId(userId);
-                cart ??= await cartRepo.createOne(userId: userId);
+                // Lấy hoặc tạo cart
+                final cart = await ref.read(ensuredCartByUserProvider(userId).future);
 
+                final cartItemRepo = ref.read(cartItemRepoProvider);
+
+                // Lấy items trong cart
                 final items = await cartItemRepo.listByCart(cart.cartId);
                 final existed = items.where((it) => it.bookId == book.bookId).toList();
 
                 if (existed.isNotEmpty) {
-                  await cartItemRepo.update(existed.first.cartItemId, quantity: existed.first.quantity + 1);
+                  // Tăng số lượng nếu sách đã có trong giỏ
+                  final current = existed.first;
+                  await cartItemRepo.update(
+                    current.cartItemId,
+                    quantity: current.quantity + 1,
+                  );
                 } else {
+                  // Thêm mới
                   await cartItemRepo.create(
                     cartId: cart.cartId,
                     bookId: book.bookId,
@@ -421,11 +428,17 @@ class BookDetailPage extends ConsumerWidget {
                   );
                 }
 
-                ref.invalidate(cartByUserProvider(userId));
+                // Refresh lại cart & items
+                ref.invalidate(ensuredCartByUserProvider(userId));
                 ref.invalidate(cartItemsByCartProvider(cart.cartId));
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã thêm vào giỏ hàng')));
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Đã thêm vào giỏ hàng')),
+                );
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi thêm giỏ hàng: $e')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Lỗi thêm giỏ hàng: $e')),
+                );
               }
             },
             style: ElevatedButton.styleFrom(
@@ -438,6 +451,7 @@ class BookDetailPage extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 12),
+        // nút "Mua ngay" giữ nguyên
         Expanded(
           child: ElevatedButton.icon(
             onPressed: () {},

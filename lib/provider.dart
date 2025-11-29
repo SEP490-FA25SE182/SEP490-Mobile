@@ -33,7 +33,6 @@ import 'package:sep490_mobile/repository/wallet_repository.dart';
 import 'package:sep490_mobile/util/trans_type.dart';
 import 'core/config.dart';
 import 'core/api_client.dart';
-import 'core/env.dart';
 import 'core/secure_store.dart';
 import 'model/answer.dart';
 import 'model/audio.dart';
@@ -74,20 +73,26 @@ import 'model/user.dart';
 import 'model/role.dart';
 
 // Config & core
-// final configProvider = Provider<AppConfig>((_) => AppConfig.fromEnv());
+final configProvider = Provider<AppConfig>((_) => AppConfig.fromEnv());
 final secureStoreProvider = Provider<SecureStore>((_) => SecureStore());
 
 final dioProvider = Provider<Dio>((ref) {
-  if (Env.isDevelopment) {
-    return ref.read(dioGatewayProvider);
-  }
+  final config = ref.read(configProvider);
+
+  // Nếu muốn tách dev/staging/prod có thể dùng:
+  // if (config.isDevelopment) { ... }
+
+  // Hiện tại mọi env đều dùng gateway()
   return ref.read(dioGatewayProvider);
 });
 
+
 final apiClientProvider = Provider<ApiClient>((ref) {
   final secureStore = ref.read(secureStoreProvider);
-  return ApiClient(secureStore);
+  final config = ref.read(configProvider);
+  return ApiClient(secureStore, config);
 });
+
 
 final dioGatewayProvider = Provider<Dio>((ref) {
   return ref.read(apiClientProvider).gateway();
@@ -218,6 +223,25 @@ final cartItemsByCartProvider = FutureProvider.family<List<CartItem>, String>((r
   return ref.read(cartItemRepoProvider).listByCart(cartId);
 });
 
+// Luôn đảm bảo user có cart
+final ensuredCartByUserProvider = FutureProvider.family<Cart, String>((ref, userId) async {
+  final repo = ref.read(cartRepoProvider);
+
+  try {
+    final existing = await repo.getByUserId(userId);
+    if (existing != null) return existing; // đã có cart
+  } on DioException catch (e) {
+    final code = e.response?.statusCode;
+    // Nếu là NOT_FOUND (404) hoặc BE đang trả 500 "Cart not found" thì coi như chưa có cart
+    if (code != 404 && code != 500) {
+      rethrow;
+    }
+  }
+
+  // Không có cart -> tạo mới
+  return repo.createOne(userId: userId);
+});
+
 ///WalletRepository
 final walletRepoProvider = Provider<WalletRepository>(
       (ref) => WalletRepository(ref.read(dioProvider)),
@@ -230,6 +254,29 @@ final walletByUserProvider = FutureProvider.family<Wallet?, String>((ref, userId
 
 final walletByIdProvider = FutureProvider.family<Wallet?, String>((ref, wid) async {
   return ref.read(walletRepoProvider).getById(wid);
+});
+
+// Luôn đảm bảo user có ví
+final ensuredWalletByUserProvider = FutureProvider.family<Wallet, String>((ref, userId) async {
+  final repo = ref.read(walletRepoProvider);
+
+  try {
+    final existing = await repo.getByUserId(userId);
+    if (existing != null) return existing; // đã có ví
+  } on DioException catch (e) {
+    final code = e.response?.statusCode;
+    // Nếu là NOT_FOUND (404) hoặc BE đang trả 500 "Wallet not found" thì coi như chưa có ví
+    if (code != 404 && code != 500) {
+      rethrow;
+    }
+  }
+
+  // Không có ví -> tạo mới
+  return repo.createOne(
+    userId: userId,
+    coin: 0,
+    balance: 0,
+  );
 });
 
 ///OrderRepository
