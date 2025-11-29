@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'core/config.dart';
+
 import 'package:sep490_mobile/page/blog/blog_detail_page.dart';
 import 'package:sep490_mobile/page/book/advanced_search_page.dart';
 import 'package:sep490_mobile/page/book/book_detail_page.dart';
@@ -29,12 +31,10 @@ import 'package:sep490_mobile/page/unity/scan_page.dart';
 import 'package:sep490_mobile/page/wallet/wallet_help_page.dart';
 import 'package:sep490_mobile/page/wallet/wallet_money_page.dart';
 import 'package:sep490_mobile/page/wallet/withdraw_page.dart';
-import 'package:sep490_mobile/widget/deep_link_service.dart';
 import 'provider.dart';
 
 import 'page/home_page.dart';
 import 'page/blog_page.dart';
-import 'page/library_page.dart';
 import 'page/cart_page.dart';
 import 'page/profile_page.dart';
 import 'page/auth/login_page.dart';
@@ -141,7 +141,7 @@ GoRouter buildRouter() => GoRouter(
       name: 'unity',
       builder: (ctx, st) {
         final markerId = st.uri.queryParameters['markerId'] ?? '';
-        const backendBase = 'http://192.168.1.201:8083';
+        final backendBase = appConfig.unityBackendBase;
         return UnityPage(markerId: markerId, backendBase: backendBase);
       },
     ),

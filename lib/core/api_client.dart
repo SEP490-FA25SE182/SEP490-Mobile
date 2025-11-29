@@ -1,25 +1,28 @@
-// lib/core/api_client.dart
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-import 'env.dart';
+
+import 'config.dart';
 import 'secure_store.dart';
 import 'failures.dart';
 
 class ApiClient {
   final SecureStore _store;
+  final AppConfig _config;
 
-  ApiClient(this._store);
+  ApiClient(this._store, this._config);
 
-  /// API throw Gateway (8080) – production & staging
-  Dio gateway() => _buildDio(Env.apiBaseUrl);
+  /// API qua Gateway / Base URL
+  Dio gateway() => _buildDio(_config.apiBaseUrl);
 
-  /// Use for dev local – directly call to service
-  Dio pageService() => _buildDio(Env.pageServiceUrl);
-  Dio mediaService() => _buildDio(Env.mediaServiceUrl);
+  /// Service riêng cho Page
+  Dio pageService() => _buildDio(_config.pageServiceUrl);
+
+  /// Service riêng cho Media
+  Dio mediaService() => _buildDio(_config.mediaServiceUrl);
 
   Dio _buildDio(String baseUrl) {
     if (baseUrl.isEmpty) {
-      throw StateError('Missing base URL. Check your .env or --dart-define');
+      throw StateError('Missing base URL. Check your --dart-define for API_BASE_URL / PAGE_SERVICE_URL / MEDIA_SERVICE_URL');
     }
 
     final dio = Dio(BaseOptions(
@@ -55,8 +58,8 @@ class ApiClient {
       },
     ));
 
-    // Optional: Logging (chỉ bật khi dev)
-    if (Env.isDevelopment) {
+    // Logging chỉ bật khi env = development
+    if (_config.isDevelopment) {
       dio.interceptors.add(LogInterceptor(
         requestBody: true,
         responseBody: true,

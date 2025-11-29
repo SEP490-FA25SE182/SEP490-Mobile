@@ -7,11 +7,22 @@ class CartRepository {
 
   /// GET /api/rookie/users/carts/user/{userId}
   Future<Cart?> getByUserId(String userId) async {
-    final res = await _dio.get('/api/rookie/users/carts/user/$userId');
-    final data = (res.data as Map).cast<String, dynamic>();
-    final cart = Cart.fromJson(data);
-    // Lọc ACTIVE ở client (phòng trường hợp BE trả cart INACTIVE)
-    return cart.isActived.name == 'ACTIVE' ? cart : null;
+    try {
+      final res = await _dio.get('/api/rookie/users/carts/user/$userId');
+      final data = (res.data as Map).cast<String, dynamic>();
+      final cart = Cart.fromJson(data);
+      return cart.isActived.name == 'ACTIVE' ? cart : null;
+    } on DioException catch (e) {
+      final code = e.response?.statusCode ?? 0;
+      final body = e.response?.data?.toString() ?? '';
+
+      // Không tìm thấy cart -> coi như chưa có
+      if (code == 404 || body.contains('Cart not found')) {
+        return null;
+      }
+
+      rethrow;
+    }
   }
 
   /// PUT /api/rookie/users/carts/{id}

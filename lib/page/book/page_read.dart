@@ -6,14 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../model/page.dart';
-import '../../model/illustration.dart';
-import '../../model/audio.dart';
 import '../../provider.dart';
 import '../../widget/gs_image.dart';
 import '../../widget/audio_player.dart';
 import '../../repository/marker_repository.dart';
 import '../../core/config.dart';
-import '../../firebase_options.dart';
 
 class PageReadPage extends ConsumerStatefulWidget {
   final String bookId;

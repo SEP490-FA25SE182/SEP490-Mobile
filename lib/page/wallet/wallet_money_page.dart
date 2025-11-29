@@ -22,26 +22,15 @@ class _WalletMoneyPageState extends ConsumerState<WalletMoneyPage> {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null || userId.isEmpty) return;
 
-    ref.invalidate(walletByUserProvider(userId));
-
-    final wid = ref.read(walletByUserProvider(userId)).value?.walletId;
-    if (wid != null && wid.isNotEmpty) {
-      ref.invalidate(transactionsByWalletProvider(wid));
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final wid2 = ref.read(walletByUserProvider(userId)).value?.walletId;
-      if (wid2 != null && wid2.isNotEmpty) {
-        ref.invalidate(transactionsByWalletProvider(wid2));
-      }
-    });
+    // reload ví (sẽ tự tạo nếu chưa có vì dùng ensuredWalletByUserProvider)
+    ref.invalidate(ensuredWalletByUserProvider(userId));
   }
 
   @override
   void initState() {
     super.initState();
     // Mỗi lần mở trang -> reload
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+    //WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
   }
 
   @override
@@ -50,7 +39,7 @@ class _WalletMoneyPageState extends ConsumerState<WalletMoneyPage> {
 
     final asyncWallet = (userId == null || userId.isEmpty)
         ? const AsyncValue<Wallet?>.data(null)
-        : ref.watch(walletByUserProvider(userId));
+        : ref.watch(ensuredWalletByUserProvider(userId)).whenData((w) => w);
 
     return Scaffold(
       backgroundColor: Colors.transparent,

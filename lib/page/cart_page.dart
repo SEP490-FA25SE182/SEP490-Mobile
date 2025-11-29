@@ -1,4 +1,3 @@
-// lib/page/cart_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -58,8 +57,8 @@ class _CartPageState extends ConsumerState<CartPage> {
       );
     }
 
-    final cartAsync = ref.watch(cartByUserProvider(uid));
-    final walletAsync = ref.watch(walletByUserProvider(uid));
+    final cartAsync = ref.watch(ensuredCartByUserProvider(uid));
+    final walletAsync = ref.watch(ensuredWalletByUserProvider(uid));
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -93,12 +92,6 @@ class _CartPageState extends ConsumerState<CartPage> {
             child: Text('Lỗi tải giỏ hàng: $e', style: const TextStyle(color: Colors.redAccent)),
           ),
           data: (cart) {
-            if (cart == null) {
-              return const Center(
-                child: Text('Giỏ hàng trống', style: TextStyle(color: Colors.white70)),
-              );
-            }
-
             final cartId = cart.cartId;
             final itemsAsync = ref.watch(cartItemsByCartProvider(cartId));
 
@@ -117,7 +110,10 @@ class _CartPageState extends ConsumerState<CartPage> {
                     .fold<double>(0.0, (sum, i) => sum + i.price * i.quantity);
 
                 // coins khả dụng
-                final coins = walletAsync.maybeWhen(data: (w) => w?.coin ?? 0, orElse: () => 0);
+                final coins = walletAsync.maybeWhen(
+                  data: (w) => w.coin,
+                  orElse: () => 0,
+                );
                 final canUseCoins = math.min(coins, (subtotal * 0.10).floor()); // xu tối đa dùng
                 // double
                 final discount = _useCoin ? canUseCoins.toDouble() : 0.0;
@@ -171,7 +167,7 @@ class _CartPageState extends ConsumerState<CartPage> {
                               loading: () => const Text('Đang tải xu...', style: TextStyle(color: Colors.white70)),
                               error: (e, _) => Text('Lỗi xu: $e', style: const TextStyle(color: Colors.redAccent)),
                               data: (w) {
-                                final coins = w?.coin ?? 0;
+                                final coins = w.coin;
                                 final canUseCoins = math.min(coins, (subtotal * 0.10).floor());
                                 final text = _useCoin
                                     ? 'Dùng ${_fmtNumber(canUseCoins)}  xu'
@@ -240,7 +236,7 @@ class _CartPageState extends ConsumerState<CartPage> {
                           _selectAll = false;
                         });
                         ref.invalidate(cartItemsByCartProvider(cart.cartId));
-                        ref.invalidate(cartByUserProvider(uid));
+                        ref.invalidate(ensuredCartByUserProvider(uid));
                       },
                       busy: _creatingOrder,
                     ),
@@ -267,13 +263,7 @@ class _CartPageState extends ConsumerState<CartPage> {
     }
 
     // lấy ví
-    final wallet = await ref.read(walletRepoProvider).getByUserId(uid);
-    if (wallet == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bạn chưa có ví. Vào "Túi xu của tôi" để tạo ví trước nhé.')),
-      );
-      return;
-    }
+    final wallet = await ref.read(ensuredWalletByUserProvider(uid).future);
 
     // list cartItemId đã tick
     final selectedIds = _checked.toList();
@@ -289,8 +279,8 @@ class _CartPageState extends ConsumerState<CartPage> {
 
       // refresh
       ref.invalidate(cartItemsByCartProvider(cartId));
-      ref.invalidate(cartByUserProvider(uid));
-      ref.invalidate(walletByUserProvider(uid));
+      ref.invalidate(ensuredCartByUserProvider(uid));
+      ref.invalidate(ensuredWalletByUserProvider(uid));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
