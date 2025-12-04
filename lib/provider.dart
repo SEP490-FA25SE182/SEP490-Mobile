@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:flutter/foundation.dart';
+
 import 'package:sep490_mobile/repository/address_repository.dart';
 import 'package:sep490_mobile/repository/answer_repository.dart';
 import 'package:sep490_mobile/repository/audio_repository.dart';
@@ -625,6 +627,12 @@ final pagesByChapterProvider = FutureProvider.family<List<PageModel>, String>((r
   return repo.getPagesByChapterId(chapterId);
 });
 
+// Provider: Lấy danh sách chương
+final chaptersByBookProvider = FutureProvider.family<List<Chapter>, String>((ref, bookId) {
+  final repo = ref.read(chapterRepoProvider);
+  return repo.getByBookId(bookId);
+});
+
 /// GhnRepository
 final ghnRepositoryProvider = Provider<GhnRepository>((ref) {
   final dio = ref.watch(dioProvider);
@@ -893,8 +901,51 @@ FutureProvider.family<Quiz, String>((ref, id) {
 
 // Quiz play data (quiz + questions + answers)
 final quizPlayProvider =
-FutureProvider.family<QuizPlay, String>((ref, id) {
-  return ref.read(quizRepoProvider).getPlayData(id);
+FutureProvider.family<QuizPlay, String>((ref, quizId) async {
+  final repo = ref.read(quizRepoProvider);
+  return repo.getPlayData(quizId);
+});
+
+// Provider: lấy quiz theo chapter
+final quizzesByChapterProvider =
+FutureProvider.family<List<Quiz>, String>((ref, chapterId) async {
+  final repo = ref.read(quizRepoProvider);
+
+  debugPrint(
+      '[quizzesByChapterProvider] BẮT ĐẦU gọi search cho chapterId=$chapterId');
+
+  try {
+    final res = await repo.search(
+      chapterId: chapterId,
+      isActived: 'ACTIVE',
+      sort: ['updatedAt-DESC'],
+    );
+
+    debugPrint(
+        '[quizzesByChapterProvider] THÀNH CÔNG: items=${res.items.length}, total=${res.total} cho chapterId=$chapterId');
+
+    if (res.items.isEmpty) {
+      debugPrint(
+          '[quizzesByChapterProvider] → KẾT QUẢ RỖNG cho chapterId=$chapterId');
+    }
+
+    return res.items;
+  } on DioException catch (e, st) {
+    debugPrint(
+        '[quizzesByChapterProvider] DioException cho chapterId=$chapterId');
+    debugPrint('  → status : ${e.response?.statusCode}');
+    debugPrint('  → url    : ${e.requestOptions.uri}');
+    debugPrint('  → data   : ${e.response?.data}');
+    debugPrint('  → message: ${e.message}');
+    debugPrint('  → stack  : $st');
+
+    return <Quiz>[];
+  } catch (e, st) {
+    debugPrint(
+        '[quizzesByChapterProvider] Lỗi không mong đợi với chapterId=$chapterId: $e');
+    debugPrint('  → stack: $st');
+    return <Quiz>[];
+  }
 });
 
 /// QuestionRepository
@@ -925,4 +976,21 @@ Provider<UserQuizResultRepository>(
 final userQuizResultByIdProvider =
 FutureProvider.family<UserQuizResult, String>((ref, id) {
   return ref.read(userQuizResultRepoProvider).getById(id);
+});
+
+// Lịch sử làm quiz theo quizId + user
+final userQuizResultsByQuizProvider =
+FutureProvider.family<List<UserQuizResult>, String>((ref, quizId) async {
+  final userId = ref.watch(currentUserIdProvider); // String? (null = khách)
+  if (userId == null || userId.isEmpty) {
+    return []; // chưa login => không có lịch sử
+  }
+
+  final repo = ref.read(userQuizResultRepoProvider);
+  final res = await repo.search(
+    quizId: quizId,
+    userId: userId,
+    sort: const ['attemptCount-ASC'], 
+  );
+  return res.items;
 });
