@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sep490_mobile/page/unity/quiz_page.dart';
+import 'package:sep490_mobile/page/unity/quiz_result_detail_page.dart';
+import 'package:sep490_mobile/page/unity/quiz_result_page.dart';
 import 'core/config.dart';
 
 import 'package:sep490_mobile/page/blog/blog_detail_page.dart';
@@ -140,9 +143,43 @@ GoRouter buildRouter() => GoRouter(
       path: '/unity',
       name: 'unity',
       builder: (ctx, st) {
-        final markerId = st.uri.queryParameters['markerId'] ?? '';
+        final mode      = st.uri.queryParameters['mode'] ?? 'marker';
+        final markerId  = st.uri.queryParameters['markerId'] ?? '';
+        final quizId    = st.uri.queryParameters['quizId'] ?? '';
         final backendBase = appConfig.unityBackendBase;
-        return UnityPage(markerId: markerId, backendBase: backendBase);
+
+        return UnityPage(
+          mode: mode,
+          markerId: markerId,
+          quizId: quizId,
+          backendBase: backendBase,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/quiz-result',
+      name: 'quiz_result',
+      builder: (ctx, st) {
+        final quizId = st.uri.queryParameters['quizId'] ?? '';
+        final resultId = st.uri.queryParameters['resultId'] ?? '';
+        return QuizResultPage(quizId: quizId, resultId: resultId);
+      },
+    ),
+    GoRoute(
+      path: '/quiz-result-detail',
+      name: 'quiz_result_detail',
+      builder: (ctx, st) {
+        final quizId = st.uri.queryParameters['quizId'] ?? '';
+        final resultId = st.uri.queryParameters['resultId'] ?? '';
+        return QuizResultDetailPage(quizId: quizId, resultId: resultId);
+      },
+    ),
+    GoRoute(
+      path: '/quiz/:quizId',
+      name: 'quiz',
+      builder: (ctx, st) {
+        final quizId = st.pathParameters['quizId'] ?? '';
+        return QuizPage(quizId: quizId);
       },
     ),
   ],

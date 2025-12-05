@@ -18,7 +18,7 @@ class AppConfig {
   // ==== default ====
   /*
   static const String _prodBase = 'https://backend.arbookrookie.xyz/api/rookie';
-  static const String _defaultIp = '192.168.1.26';
+  static const String _defaultIp = '192.168.1.30';
   static const String _defaultGatewayUrl = 'http://$_defaultIp:8080';
   static const String _defaultUrl = 'http://$_defaultIp:8081';
   static const String _defaultPageServiceUrl = 'http://$_defaultIp:8081';

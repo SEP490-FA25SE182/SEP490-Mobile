@@ -116,7 +116,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
               onPressed: () {
                 ref.read(audioPlayerProvider).pause();
                 Navigator.pop(context);
-                context.go('/unity?markerId=${marker.markerId}');
+                context.go('/unity?mode=marker&markerId=${marker.markerId}');
               },
               child: const Text('Mở AR'),
             ),
