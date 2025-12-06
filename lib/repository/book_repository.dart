@@ -21,7 +21,7 @@ class BookRepository {
         'page': page,
         'size': size,
         'sort': sort,
-        'status': 'PUBLISHED',
+        'publicationStatus': 1,
 
         if (search != null && search.trim().isNotEmpty)
           'q': search.trim(),
@@ -67,7 +67,7 @@ class BookRepository {
     try {
       final res = await _dio.get(
         '/api/rookie/users/books',
-        queryParameters: {'sort': 'updatedAt-desc', 'size': limit, 'page': 0, 'status': 'PUBLISHED'},
+        queryParameters: {'sort': 'updatedAt-desc', 'size': limit, 'page': 0, 'publicationStatus': 1},
       );
 
       final data = res.data;
