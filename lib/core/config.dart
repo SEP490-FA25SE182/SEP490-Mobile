@@ -16,12 +16,12 @@ class AppConfig {
   });
 
   // ==== default ====
-  static const String _defaultIp = '192.168.1.30';
-  static const String _defaultGatewayUrl = 'http://$_defaultIp:8080';
-  static const String _defaultUrl = 'http://$_defaultIp:8081';
-  static const String _defaultPageServiceUrl = 'http://$_defaultIp:8081';
-  static const String _defaultMediaServiceUrl = 'http://$_defaultIp:8082';
-  static const String _defaultUnityBackendBase = 'http://$_defaultIp:8083';
+  static const String _defaultIp = 'https://backend.arbookrookie.xyz/api/rookie';
+  static const String _defaultGatewayUrl = '$_defaultIp:8080';
+  static const String _defaultUrl = '$_defaultIp:8081';
+  static const String _defaultPageServiceUrl = '$_defaultIp:8081';
+  static const String _defaultMediaServiceUrl = '$_defaultIp:8082';
+  static const String _defaultUnityBackendBase = '$_defaultIp:8083';
 
   /// Đọc từ biến môi trường khi build (`--dart-define`)
   factory AppConfig.fromEnv() => AppConfig(
