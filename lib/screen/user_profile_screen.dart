@@ -82,11 +82,6 @@ class UserProfileSection extends ConsumerWidget {
               _SectionTitle('Các lựa chọn'),
               SizedBox(height: 6),
               _OptionTile(
-                iconUrl: '$_gsIconBase/history.png',
-                title: 'Lịch sử thanh toán',
-                routeName: '/payments',
-              ),
-              _OptionTile(
                 iconUrl: '$_gsIconBase/library.png',
                 title: 'Thư viện của bạn',
                 routeName: '/library',
@@ -148,7 +143,7 @@ class _OrderRow extends StatelessWidget {
         _OrderAction(
           title: 'Hoàn thành',
           iconUrl: '$_gsIconBase/done.png',
-          routeName: '/orders/done',
+          routeName: '/orders/delivered',
         ),
       ],
     );
