@@ -30,8 +30,8 @@ class AppConfig {
   static const String _defaultUrl = 'https://backend.arbookrookie.xyz/api/rookie';
   static const String _defaultIp = '192.168.1.26';
   static const String _defaultPageServiceUrl = 'https://backend.arbookrookie.xyz/api/rookie';
-  static const String _defaultMediaServiceUrl = 'https://backend.arbookrookie.xyz/api/rookie';
-  static const String _defaultUnityBackendBase = 'https://backend.arbookrookie.xyz/api/rookie';
+  static const String _defaultMediaServiceUrl = 'https://backend.arbookrookie.xyz/api/ai';
+  static const String _defaultUnityBackendBase = 'https://backend.arbookrookie.xyz/api/ar';
 
 
   /// Đọc từ biến môi trường khi build (`--dart-define`)
