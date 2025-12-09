@@ -6,7 +6,6 @@ import '../../provider.dart';
 import '../../repository/notification_repository.dart';
 import '../../util/time_utils.dart'; // Optional helper for formatting time
 
-/// --- PROVIDER + STATE MANAGEMENT ---
 
 final userNotificationsProvider = FutureProvider.autoDispose<List<AppNotification>>((ref) async {
   final repo = ref.watch(notificationRepoProvider);
@@ -18,8 +17,6 @@ final userNotificationsProvider = FutureProvider.autoDispose<List<AppNotificatio
 
   return repo.list(userId: userId, sort: 'createdAt-desc');
 });
-
-/// --- PAGE ---
 
 class NotificationPage extends ConsumerWidget {
   const NotificationPage({super.key});
