@@ -54,13 +54,21 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
 
   bool _isImageUrl(String? url) {
     if (url == null) return false;
-    final u = url.trim().toLowerCase();
-    if (!u.startsWith('http://') && !u.startsWith('https://')) return false;
-    return u.endsWith('.png') ||
-        u.endsWith('.jpg') ||
-        u.endsWith('.jpeg') ||
-        u.endsWith('.gif') ||
-        u.endsWith('.webp');
+
+    final cleaned = url.trim().replaceAll(RegExp(r'\s+'), '');
+
+    final qIndex = cleaned.indexOf('?');
+    final withoutQuery = qIndex >= 0 ? cleaned.substring(0, qIndex) : cleaned;
+
+    final lower = withoutQuery.toLowerCase();
+
+    if (!lower.startsWith('http://') && !lower.startsWith('https://')) return false;
+
+    return lower.endsWith('.png') ||
+        lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.gif') ||
+        lower.endsWith('.webp');
   }
 
   // Load vị trí đã đọc
@@ -245,32 +253,32 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                       itemBuilder: (context, index) {
                         final page = pages[index];
 
+                        final content = page.content?.trim() ?? '';
+                        final bool contentIsImage = _isImageUrl(content);
+
+                        // 1. Nếu content là URL ảnh -> luôn render ảnh
+                        if (contentIsImage) {
+                          return _buildImagePage(content);
+                        }
+
                         final bool showText = page.isTextPage;
                         final bool showImage = page.isPicturePage;
 
-                        // Ưu tiên trang picture
-                        if (showImage) {
-                          // 1. Có Illustration → dùng illustration
-                          if (page.illustrations.isNotEmpty) {
-                            return _buildImagePage(page.illustrations.first.imageUrl);
-                          }
-                          // 2. Không có Illustration nhưng content là URL ảnh → dùng content
-                          final c = page.content?.trim() ?? '';
-                          if (_isImageUrl(c)) {
-                            return _buildImagePage(c);
-                          }
+                        // 2. Trang picture: ưu tiên illustration
+                        if (showImage && page.illustrations.isNotEmpty) {
+                          return _buildImagePage(page.illustrations.first.imageUrl);
                         }
 
-                        // Trang text
-                        if (showText && page.content?.trim().isNotEmpty == true) {
+                        // 3. Trang text bình thường
+                        if (showText && content.isNotEmpty) {
                           return _buildTextPage(page);
                         }
 
-                        // Fallback cũ (nếu thiếu pageType)
+                        // 4. Fallback cũ (phòng khi thiếu pageType, data lạ)
                         if (page.illustrations.isNotEmpty) {
                           return _buildImagePage(page.illustrations.first.imageUrl);
                         }
-                        if (page.content?.trim().isNotEmpty == true) {
+                        if (content.isNotEmpty) {
                           return _buildTextPage(page);
                         }
 
