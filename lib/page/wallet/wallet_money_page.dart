@@ -30,7 +30,10 @@ class _WalletMoneyPageState extends ConsumerState<WalletMoneyPage> {
   void initState() {
     super.initState();
     // Mỗi lần mở trang -> reload
-    //WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refresh();
+    });
   }
 
   @override

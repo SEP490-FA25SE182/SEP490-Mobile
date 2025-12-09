@@ -33,10 +33,20 @@ class _WithdrawPageState extends ConsumerState<WithdrawPage> {
   String? _bankName;
   bool _busy = false;
 
+  void _refresh() {
+    // ép Riverpod load lại ví từ server
+    ref.invalidate(walletByIdProvider(widget.walletId));
+  }
+
   @override
   void initState() {
     super.initState();
     _amountCtl.addListener(_onAmountChanged);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refresh();
+    });
   }
 
   @override

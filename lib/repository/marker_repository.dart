@@ -5,15 +5,11 @@ import '../model/marker.dart';
 import '../core/config.dart';
 
 class MarkerRepository {
-  final String _apiBaseUrl;
+  final String _baseUrl;
 
-  MarkerRepository(this._apiBaseUrl);
-  String get _arBaseUrl {
-    if (_apiBaseUrl.contains(':8081')) {
-      return _apiBaseUrl.replaceFirst(':8081', ':8083');
-    }
-    return _apiBaseUrl.replaceFirst(RegExp(r':\d+'), ':8083');
-  }
+  MarkerRepository(this._baseUrl);
+  String get _arBaseUrl =>
+      _baseUrl.endsWith('/') ? _baseUrl.substring(0, _baseUrl.length - 1) : _baseUrl;
 
   /// Gọi /api/rookie/markers/search?pageId=...&page=0&size=1
   /// Trả về marker đầu tiên hoặc null nếu không có.

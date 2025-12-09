@@ -59,8 +59,18 @@ class PageModel {
     );
   }
 
-  bool get isTextPage => pageType == PageType.text || (content?.trim().isNotEmpty == true && illustrations.isEmpty);
-  bool get isPicturePage => pageType == PageType.picture || illustrations.isNotEmpty;
+  bool get isTextPage {
+    if (pageType == PageType.text) return true;
+    if (pageType == PageType.picture) return false;
+    return content?.trim().isNotEmpty == true && illustrations.isEmpty;
+  }
+
+  bool get isPicturePage {
+    if (pageType == PageType.picture) return true;
+    if (pageType == PageType.text) return false;
+    return illustrations.isNotEmpty;
+  }
+
 
   Map<String, dynamic> toJson() => {
     'pageId': pageId,

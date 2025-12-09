@@ -22,10 +22,20 @@ class _DepositPageState extends ConsumerState<DepositPage> {
   bool _formatting = false;
   bool _busy = false;
 
+  void _refresh() {
+    // ép Riverpod load lại ví từ server
+    ref.invalidate(walletByIdProvider(widget.walletId));
+  }
+
   @override
   void initState() {
     super.initState();
     _ctrl.addListener(_onChanged);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refresh();
+    });
   }
 
   @override

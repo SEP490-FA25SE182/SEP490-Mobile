@@ -874,6 +874,7 @@ final pagesWithMediaProvider = FutureProvider.family<List<PageModel>, String>((r
       chapterId: page.chapterId,
       illustrations: illustrations,
       audios: audios,
+      pageType: page.pageType,
     );
   }).toList()
     ..sort((a, b) => a.pageNumber.compareTo(b.pageNumber));
