@@ -38,7 +38,8 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
     super.initState();
     _themeKey = 'reader_theme_${widget.bookId}_${widget.chapterId}';
     _pageController = PageController();
-    _markerRepo = MarkerRepository(AppConfig.fromEnv().apiBaseUrl);
+    final config = AppConfig.fromEnv();
+    _markerRepo = MarkerRepository(config.unityBackendBase);
     _loadTheme();
   }
 
@@ -51,6 +52,16 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
     }
   }
 
+  bool _isImageUrl(String? url) {
+    if (url == null) return false;
+    final u = url.trim().toLowerCase();
+    if (!u.startsWith('http://') && !u.startsWith('https://')) return false;
+    return u.endsWith('.png') ||
+        u.endsWith('.jpg') ||
+        u.endsWith('.jpeg') ||
+        u.endsWith('.gif') ||
+        u.endsWith('.webp');
+  }
 
   // Load vị trí đã đọc
   Future<void> _loadLastPositionSafe() async {
@@ -237,13 +248,35 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                         final bool showText = page.isTextPage;
                         final bool showImage = page.isPicturePage;
 
-                        if (showImage && page.illustrations.isNotEmpty) {
-                          return _buildImagePage(page.illustrations.first.imageUrl);
-                        } else if (showText && page.content?.trim().isNotEmpty == true) {
-                          return _buildTextPage(page);
-                        } else {
-                          return const Center(child: Text('Trang trống', style: TextStyle(color: Colors.grey)));
+                        // Ưu tiên trang picture
+                        if (showImage) {
+                          // 1. Có Illustration → dùng illustration
+                          if (page.illustrations.isNotEmpty) {
+                            return _buildImagePage(page.illustrations.first.imageUrl);
+                          }
+                          // 2. Không có Illustration nhưng content là URL ảnh → dùng content
+                          final c = page.content?.trim() ?? '';
+                          if (_isImageUrl(c)) {
+                            return _buildImagePage(c);
+                          }
                         }
+
+                        // Trang text
+                        if (showText && page.content?.trim().isNotEmpty == true) {
+                          return _buildTextPage(page);
+                        }
+
+                        // Fallback cũ (nếu thiếu pageType)
+                        if (page.illustrations.isNotEmpty) {
+                          return _buildImagePage(page.illustrations.first.imageUrl);
+                        }
+                        if (page.content?.trim().isNotEmpty == true) {
+                          return _buildTextPage(page);
+                        }
+
+                        return const Center(
+                          child: Text('Trang trống', style: TextStyle(color: Colors.grey)),
+                        );
                       },
                     ),
 
@@ -316,16 +349,14 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                 ),
                               ),
 
-
-
-                              if (currentPageModel.isTextPage)
+                              if (currentPageModel.pageType == PageType.text)
                                 BookAudioPlayer(
                                   bookId: widget.bookId,
                                   chapterId: widget.chapterId,
                                   isDarkMode: _isDarkMode,
                                 ),
 
-                              if (currentPageModel.isPicturePage)
+                              if (currentPageModel.pageType == PageType.picture)
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 32),
                                   child: ElevatedButton.icon(
@@ -342,7 +373,8 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                                   ),
                                 ),
 
-                              if (currentPageModel.isTextPage || currentPageModel.isPicturePage)
+                              if (currentPageModel.pageType == PageType.text ||
+                                  currentPageModel.pageType == PageType.picture)
                                 const SizedBox(height: 12),
                             ],
                           ),
