@@ -143,7 +143,7 @@ class _OrderRow extends StatelessWidget {
         _OrderAction(
           title: 'Hoàn thành',
           iconUrl: '$_gsIconBase/done.png',
-          routeName: '/orders/delivered',
+          routeName: '/orders/received',
         ),
       ],
     );

@@ -7,11 +7,11 @@ import '../../model/order.dart';
 import '../../widget/gs_image.dart';
 import '../../screen/nav_order_screen.dart';
 
-class OrderDeliveredPage extends ConsumerWidget {
-  const OrderDeliveredPage({super.key});
+class OrderReceivedPage extends ConsumerWidget {
+  const OrderReceivedPage({super.key});
 
   Future<List<Order>> _fetch(WidgetRef ref, String userId) {
-    return ref.read(orderRepoProvider).search(userId: userId, status: 'DELIVERED');
+    return ref.read(orderRepoProvider).search(userId: userId, status: 'RECEIVED');
   }
 
   void _goTab(BuildContext ctx, OrderTab t) {
@@ -19,42 +19,10 @@ class OrderDeliveredPage extends ConsumerWidget {
       case OrderTab.pending:    ctx.go('/orders/pending');    break;
       case OrderTab.processing: ctx.go('/orders/processing'); break;
       case OrderTab.shipping:   ctx.go('/orders/shipping');   break;
-      case OrderTab.delivered:  break;
-      case OrderTab.received:   ctx.go('/orders/received');   break;
+      case OrderTab.delivered:  ctx.go('/orders/delivered');  break;
+      case OrderTab.received:   break;
       case OrderTab.cancelled:  ctx.go('/orders/cancel');     break;
       case OrderTab.returned:   ctx.go('/orders/return');     break;
-    }
-  }
-
-  Future<void> _markReceived(BuildContext ctx, WidgetRef ref, Order o) async {
-    final ok = await showDialog<bool>(
-      context: ctx,
-      builder: (_) => AlertDialog(
-        title: const Text('Xác nhận đã nhận hàng'),
-        content: const Text('Bạn đã nhận được đơn hàng này?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Chưa')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Đã nhận')),
-        ],
-      ),
-    );
-    if (ok != true) return;
-
-    try {
-      // RECEIVED = 5
-      await ref.read(orderRepoProvider).update(o.orderId, status: 5);
-      if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          const SnackBar(content: Text('Cập nhật: Đơn đã nhận thành công')),
-        );
-        ctx.go('/orders/received');
-      }
-    } catch (e) {
-      if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          SnackBar(content: Text('Cập nhật thất bại: $e')),
-        );
-      }
     }
   }
 
@@ -97,7 +65,7 @@ class OrderDeliveredPage extends ConsumerWidget {
                   Container(height: 1, color: Colors.white.withOpacity(0.15)),
 
                   NavOrderScreen(
-                    current: OrderTab.delivered,
+                    current: OrderTab.received,
                     onChanged: (t) => _goTab(context, t),
                   ),
 
@@ -129,12 +97,7 @@ class OrderDeliveredPage extends ConsumerWidget {
                                   child: Text('Không có đơn nào',
                                       style: TextStyle(color: Colors.white70)),
                                 ),
-                              ...orders.map(
-                                    (o) => _DeliveredOrderCard(
-                                  order: o,
-                                  onMarkReceived: () => _markReceived(context, ref, o),
-                                ),
-                              ),
+                              ...orders.map((o) => _ReceivedOrderCard(order: o)),
                             ],
                           ),
                         );
@@ -158,15 +121,10 @@ String _fmtVnd(num v) {
   return '$s VND';
 }
 
-/// Card dùng cho trang DELIVERED – nút: "Đã nhận được hàng"
-class _DeliveredOrderCard extends ConsumerWidget {
+/// Card dùng cho trang RECEIVED – nút: "Trả hàng" + "Đánh giá"
+class _ReceivedOrderCard extends ConsumerWidget {
   final Order order;
-  final VoidCallback onMarkReceived;
-
-  const _DeliveredOrderCard({
-    required this.order,
-    required this.onMarkReceived,
-  });
+  const _ReceivedOrderCard({required this.order});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -293,12 +251,22 @@ class _DeliveredOrderCard extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    OutlinedButton(
+                      onPressed: () => context.push('/orders/return/${order.orderId}'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white70),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Trả hàng'),
+                    ),
+                    const SizedBox(width: 10),
                     FilledButton.tonal(
-                      onPressed: onMarkReceived,
+                      onPressed: () => context.push('/orders/feedback/${order.orderId}'),
                       style: FilledButton.styleFrom(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: const Text('Đã nhận được hàng'),
+                      child: const Text('Đánh giá'),
                     ),
                   ],
                 ),

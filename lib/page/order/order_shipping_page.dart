@@ -20,37 +20,9 @@ class OrderShippingPage extends ConsumerWidget {
       case OrderTab.processing: ctx.go('/orders/processing'); break;
       case OrderTab.shipping:   break;
       case OrderTab.delivered:  ctx.go('/orders/delivered');  break;
-      case OrderTab.cancelled:  ctx.go('/orders/cancel');  break;
-      case OrderTab.returned:   ctx.go('/orders/return');   break;
-    }
-  }
-
-  Future<void> _markDelivered(BuildContext ctx, WidgetRef ref, Order o) async {
-    final ok = await showDialog<bool>(
-      context: ctx,
-      builder: (_) => AlertDialog(
-        title: const Text('Xác nhận đã nhận hàng'),
-        content: const Text('Bạn đã nhận được đơn hàng này?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Chưa')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Đã nhận')),
-        ],
-      ),
-    );
-    if (ok != true) return;
-
-    try {
-      await ref.read(orderRepoProvider).update(o.orderId, status: 4);
-      if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          const SnackBar(content: Text('Cập nhật: Đơn đã giao thành công')),
-        );
-        ctx.go('/orders/delivered');
-      }
-    } catch (e) {
-      if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Cập nhật thất bại: $e')));
-      }
+      case OrderTab.received:   ctx.go('/orders/received');   break;
+      case OrderTab.cancelled:  ctx.go('/orders/cancel');     break;
+      case OrderTab.returned:   ctx.go('/orders/return');     break;
     }
   }
 
@@ -91,7 +63,7 @@ class OrderShippingPage extends ConsumerWidget {
                   ),
                   Container(height: 1, color: Colors.white.withOpacity(0.15)),
 
-                  // tabs: cố định current, đổi tab thì điều hướng
+                  // tabs
                   NavOrderScreen(
                     current: OrderTab.shipping,
                     onChanged: (t) => _goTab(context, t),
@@ -107,16 +79,18 @@ class OrderShippingPage extends ConsumerWidget {
                           return const Center(child: CircularProgressIndicator());
                         }
                         if (snap.hasError) {
-                          return Center(child: Text('Lỗi tải đơn: ${snap.error}',
-                              style: const TextStyle(color: Colors.redAccent)));
+                          return Center(
+                            child: Text('Lỗi tải đơn: ${snap.error}',
+                                style: const TextStyle(color: Colors.redAccent)),
+                          );
                         }
                         final orders = snap.data ?? <Order>[];
                         return SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                           child: OrderList(
                             orders: orders,
-                            actionLabel: 'Đã nhận được hàng',
-                            onAction: (o) => _markDelivered(context, ref, o),
+                            actionLabel: 'Xem chi tiết',
+                            onAction: (o) => context.push('/orders/detail/${o.orderId}'),
                             onSeeMore: (o) => context.push('/orders/detail/${o.orderId}'),
                           ),
                         );
