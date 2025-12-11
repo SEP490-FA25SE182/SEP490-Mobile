@@ -20,6 +20,7 @@ class OrderCancelPage extends ConsumerWidget {
       case OrderTab.processing: ctx.go('/orders/processing'); break;
       case OrderTab.shipping:   ctx.go('/orders/shipping');   break;
       case OrderTab.delivered:  ctx.go('/orders/delivered');  break;
+      case OrderTab.received: ctx.go('/orders/received'); break;
       case OrderTab.cancelled:  break;
       case OrderTab.returned:   ctx.go('/orders/return');   break;
     }

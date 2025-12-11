@@ -25,6 +25,7 @@ class _OrderPendingPageState extends ConsumerState<OrderPendingPage> {
       case OrderTab.processing:status = 'PROCESSING';break;
       case OrderTab.shipping:  status = 'SHIPPING';  break;
       case OrderTab.delivered: status = 'DELIVERED'; break;
+      case OrderTab.received: status = 'RECEIVED'; break;
       case OrderTab.cancelled: status = 'CANCELLED'; break;
       case OrderTab.returned:  status = 'RETURNED';  break;
     }
@@ -110,6 +111,7 @@ class _OrderPendingPageState extends ConsumerState<OrderPendingPage> {
                         case OrderTab.processing: context.go('/orders/processing'); break;
                         case OrderTab.shipping:   context.go('/orders/shipping');   break;
                         case OrderTab.delivered:  context.go('/orders/delivered');  break;
+                        case OrderTab.received:  context.go('/orders/received');  break;
                         case OrderTab.cancelled:  context.go('/orders/cancel');  break;
                         case OrderTab.returned:   context.go('/orders/return');   break;
                       }

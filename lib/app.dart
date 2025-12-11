@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sep490_mobile/page/order/order_received_page.dart';
 import 'package:sep490_mobile/page/unity/quiz_page.dart';
 import 'package:sep490_mobile/page/unity/quiz_result_detail_page.dart';
 import 'package:sep490_mobile/page/unity/quiz_result_page.dart';
@@ -133,6 +134,7 @@ GoRouter buildRouter() => GoRouter(
     GoRoute(path: '/orders/processing', builder: (ctx, st) => const OrderProcessingPage()),
     GoRoute(path: '/orders/shipping', builder: (ctx, st) => const OrderShippingPage()),
     GoRoute(path: '/orders/delivered', builder: (ctx, st) => const OrderDeliveredPage()),
+    GoRoute(path: '/orders/received', builder: (ctx, st) => const OrderReceivedPage()),
     GoRoute(path: '/orders/cancel', builder: (ctx, st) => const OrderCancelPage()),
     GoRoute(path: '/orders/return', builder: (ctx, st) => const OrderReturnPage()),
     GoRoute(path: '/orders/return/:orderId', builder: (ctx, st) => ReturnPage(orderId: st.pathParameters['orderId']!),),

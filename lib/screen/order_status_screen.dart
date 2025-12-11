@@ -74,10 +74,11 @@ class OrderCard extends ConsumerWidget {
     switch (status) {
       case 1: return 'Hủy đơn hàng';            // PENDING
       case 2: return 'Xem chi tiết';            // PROCESSING
-      case 3: return 'Đã nhận được hàng';       // SHIPPING
-      case 4: return 'Đánh giá';                // DELIVERED
-      case 5: return 'Xem chi tiết';            // CANCELLED
-      case 6: return 'Xem chi tiết';            // RETURNED
+      case 3: return 'Xem chi tiết';            // SHIPPING
+      case 4: return 'Đã nhận được hàng';       // DELIVERED
+      case 5: return 'Đánh giá';                // RECEIVED
+      case 6: return 'Xem chi tiết';            // CANCELLED
+      case 7: return 'Xem chi tiết';            // RETURNED
       default: return 'Xem chi tiết';
     }
   }

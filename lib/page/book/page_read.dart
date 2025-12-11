@@ -69,6 +69,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
         lower.endsWith('.jpeg') ||
         lower.endsWith('.gif') ||
         lower.endsWith('.webp');
+    
   }
 
   // Load vị trí đã đọc
