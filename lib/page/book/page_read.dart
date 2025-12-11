@@ -183,6 +183,12 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
 
   // Image Page (full màn hình)
   Widget _buildImagePage(String imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return const Center(
+        child: Text('Không có ảnh', style: TextStyle(color: Colors.grey)),
+      );
+    }
+
     return SafeArea(
       child: Stack(
         fit: StackFit.expand,
@@ -242,7 +248,6 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                 onTap: _toggleControls,
                 child: Stack(
                   children: [
-                    // Nội dung trang
                     PageView.builder(
                       controller: _pageController,
                       onPageChanged: (index) {
@@ -254,32 +259,13 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                       itemBuilder: (context, index) {
                         final page = pages[index];
 
-                        final content = page.content?.trim() ?? '';
-                        final bool contentIsImage = _isImageUrl(content);
+                        final String? imageUrl = page.effectiveImageUrl;
 
-                        // 1. Nếu content là URL ảnh -> luôn render ảnh
-                        if (contentIsImage) {
-                          return _buildImagePage(content);
+                        if (imageUrl != null && imageUrl.isNotEmpty) {
+                          return _buildImagePage(imageUrl);
                         }
 
-                        final bool showText = page.isTextPage;
-                        final bool showImage = page.isPicturePage;
-
-                        // 2. Trang picture: ưu tiên illustration
-                        if (showImage && page.illustrations.isNotEmpty) {
-                          return _buildImagePage(page.illustrations.first.imageUrl);
-                        }
-
-                        // 3. Trang text bình thường
-                        if (showText && content.isNotEmpty) {
-                          return _buildTextPage(page);
-                        }
-
-                        // 4. Fallback cũ (phòng khi thiếu pageType, data lạ)
-                        if (page.illustrations.isNotEmpty) {
-                          return _buildImagePage(page.illustrations.first.imageUrl);
-                        }
-                        if (content.isNotEmpty) {
+                        if (page.isTextPage && page.content?.trim().isNotEmpty == true) {
                           return _buildTextPage(page);
                         }
 
@@ -289,7 +275,6 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
                       },
                     ),
 
-                    // Header + Controls
                     if (_showControls)
                       Positioned(
                         top: 0,

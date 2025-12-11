@@ -32,13 +32,17 @@ class HomePage extends ConsumerWidget {
         actions: [
           GestureDetector(
             onTap: () {
-              //Navigate to BookList page when search clicked
               context.push('/booklist');
             },
             child: _circleIcon(Icons.search),
           ),
           const SizedBox(width: 8),
-          _circleIcon(Icons.notifications_none),
+          GestureDetector(
+            onTap: () {
+              context.push('/notification');
+            },
+            child: _circleIcon(Icons.notifications_none),
+          ),
           const SizedBox(width: 12),
         ],
       ),

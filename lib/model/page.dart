@@ -31,6 +31,42 @@ class PageModel {
     this.pageType = PageType.unknown,
   });
 
+  String? get imageUrlFromContent {
+    final text = content ?? '';
+    if (text.isEmpty) return null;
+
+    final regExp = RegExp(r'(https?://[^\s]+|gs://[^\s]+)', caseSensitive: false);
+    final match = regExp.firstMatch(text);
+
+    if (match != null) {
+      String url = match.group(0)!;
+      url = url.replaceAll(RegExp(r'[)\]>"' + "']" + r'$'), '');
+      return url.trim();
+      }
+          return null;
+      }
+
+  String? get effectiveImageUrl {
+    if (illustrations.isNotEmpty) {
+      return illustrations.first.imageUrl;
+    }
+
+    if (pageType == PageType.picture || pageType == PageType.unknown) {
+      return imageUrlFromContent;
+    }
+
+    return null;
+  }
+
+  bool get isPicturePage =>
+      pageType == PageType.picture ||
+          illustrations.isNotEmpty ||
+          effectiveImageUrl != null;
+
+  bool get isTextPage =>
+      (content?.trim().isNotEmpty == true) &&
+          effectiveImageUrl == null;
+
   factory PageModel.fromJson(Map<String, dynamic> j) {
     int _int(dynamic v) => v is int ? v : int.tryParse(v?.toString() ?? '0') ?? 0;
 
@@ -58,19 +94,6 @@ class PageModel {
       pageType: pageType,
     );
   }
-
-  bool get isTextPage {
-    if (pageType == PageType.text) return true;
-    if (pageType == PageType.picture) return false;
-    return content?.trim().isNotEmpty == true && illustrations.isEmpty;
-  }
-
-  bool get isPicturePage {
-    if (pageType == PageType.picture) return true;
-    if (pageType == PageType.text) return false;
-    return illustrations.isNotEmpty;
-  }
-
 
   Map<String, dynamic> toJson() => {
     'pageId': pageId,
