@@ -15,8 +15,8 @@ public class MainActivity extends FlutterActivity {
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
         super.configureFlutterEngine(flutterEngine);
 
-        // Khởi tạo UnityBridge với BinaryMessenger của engine
         UnityBridge.init(flutterEngine.getDartExecutor().getBinaryMessenger());
     }
 }
+
 

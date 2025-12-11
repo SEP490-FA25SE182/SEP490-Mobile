@@ -21,7 +21,6 @@ class _WalletMoneyPageState extends ConsumerState<WalletMoneyPage> {
   void _refresh() {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null || userId.isEmpty) return;
-
     // reload ví (sẽ tự tạo nếu chưa có vì dùng ensuredWalletByUserProvider)
     ref.invalidate(ensuredWalletByUserProvider(userId));
   }

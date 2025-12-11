@@ -12,7 +12,7 @@ const _coinIconUrl =
 class ResultFailScreen extends StatelessWidget {
   final UserQuizResult result;
   final VoidCallback onBackHome;
-  final VoidCallback onViewAnswer; // vẫn giữ cho tương thích
+  final VoidCallback onViewAnswer;
 
   const ResultFailScreen({
     super.key,

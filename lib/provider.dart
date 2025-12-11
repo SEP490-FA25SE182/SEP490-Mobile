@@ -310,7 +310,7 @@ final orderDetailIdForBookProvider = FutureProvider.family<String?, (String user
 
       final orders = await orderRepo.search(
         userId: userId,
-        status: 'DELIVERED',
+        status: 'RECEIVED',
         page: 0,
         size: 100,
       );
@@ -981,17 +981,17 @@ FutureProvider.family<UserQuizResult, String>((ref, id) {
 
 // Lịch sử làm quiz theo quizId + user
 final userQuizResultsByQuizProvider =
-FutureProvider.family<List<UserQuizResult>, String>((ref, quizId) async {
-  final userId = ref.watch(currentUserIdProvider); // String? (null = khách)
+FutureProvider.autoDispose.family<List<UserQuizResult>, String>((ref, quizId) async {
+  final userId = ref.watch(currentUserIdProvider);
   if (userId == null || userId.isEmpty) {
-    return []; // chưa login => không có lịch sử
+    return [];
   }
 
   final repo = ref.read(userQuizResultRepoProvider);
   final res = await repo.search(
     quizId: quizId,
     userId: userId,
-    sort: const ['attemptCount-ASC'], 
+    sort: const ['attemptCount-ASC'],
   );
   return res.items;
 });
