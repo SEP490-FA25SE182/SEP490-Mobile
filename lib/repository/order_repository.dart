@@ -118,7 +118,7 @@ class OrderRepository {
   Future<PageResponse<Book>> getPurchasedBooks({
     required String userId,
     String? q,
-    String? sort, // e.g. "updatedAt-desc", "bookName-asc", "price-desc"
+    String? sort,
     String? genreId,
     String? bookshelfId,
     int page = 0,
@@ -166,7 +166,6 @@ class OrderRepository {
     }
   }
 
-  // Optional: Simple version if you just want List<Book>
   Future<List<Book>> getPurchasedBooksSimple({
     required String userId,
     String? q,
@@ -177,7 +176,7 @@ class OrderRepository {
       q: q,
       sort: sort,
       page: 0,
-      size: 999, // or a large number
+      size: 999,
     );
     return page.content;
   }
