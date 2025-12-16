@@ -41,8 +41,9 @@ String orderStatusLabel(int? s) {
     case 2: return 'Đang chuẩn bị';
     case 3: return 'Đang giao';
     case 4: return 'Đã giao';
-    case 5: return 'Đã hủy';
-    case 6: return 'Đã trả hàng';
+    case 5: return 'Đã nhận';
+    case 6: return 'Đã hủy';
+    case 7: return 'Đã trả hàng';
     default: return 'Không xác định';
   }
 }
