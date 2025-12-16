@@ -22,6 +22,7 @@ class BookRepository {
         'size': size,
         'sort': sort,
         'publicationStatus': 1,
+        'isActived': 'ACTIVE',
 
         if (search != null && search.trim().isNotEmpty)
           'q': search.trim(),
@@ -67,7 +68,7 @@ class BookRepository {
     try {
       final res = await _dio.get(
         '/api/rookie/users/books',
-        queryParameters: {'sort': 'updatedAt-desc', 'size': limit, 'page': 0, 'publicationStatus': 1},
+        queryParameters: {'sort': 'updatedAt-desc', 'size': limit, 'page': 0, 'publicationStatus': 1, 'isActived': 'ACTIVE',},
       );
 
       final data = res.data;
@@ -94,7 +95,12 @@ class BookRepository {
 
       final data = res.data;
       if (data is Map<String, dynamic>) {
-        return Book.fromJson(data);
+        final book = Book.fromJson(data);
+
+        if (book.isActived?.toUpperCase() != 'ACTIVE') {
+          throw Exception('Sách không còn hoạt động');
+        }
+        return book;
       }
 
       throw Exception('Dữ liệu sách không hợp lệ');
@@ -115,6 +121,7 @@ class BookRepository {
         'page': page,
         'size': size,
         if (sort != null && sort.isNotEmpty) 'sort': sort,
+        'isActived': 'ACTIVE',
       };
 
       final res = await _dio.get(
