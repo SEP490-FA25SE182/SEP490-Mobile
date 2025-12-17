@@ -352,7 +352,7 @@ final userFeedbackStatusProvider = FutureProvider.family<
     try {
       final orders = await orderRepo.search(
         userId: userId,
-        status: 'DELIVERED',
+        status: 'RECEIVED',
         page: 0,
         size: 100,
       );

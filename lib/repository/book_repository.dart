@@ -15,14 +15,16 @@ class BookRepository {
     double? minPrice,
     double? maxPrice,
     String? authorId,
+    String? isActived = 'ACTIVE',
+    int? publicationStatus = 1,
   }) async {
     try {
       final query = <String, dynamic>{
         'page': page,
         'size': size,
         'sort': sort,
-        'publicationStatus': 1,
-        'isActived': 'ACTIVE',
+        'publicationStatus': publicationStatus,
+        'isActived': isActived,
 
         if (search != null && search.trim().isNotEmpty)
           'q': search.trim(),

@@ -123,6 +123,7 @@ class OrderRepository {
     String? bookshelfId,
     int page = 0,
     int size = 20,
+    String? status,
   }) async {
     try {
       print('Fetching purchased books: user=$userId, q=$q, sort=$sort');
@@ -133,6 +134,7 @@ class OrderRepository {
           'userId': userId,
           'page': page,
           'size': size,
+          'status': status ?? 'RECEIVED',
           if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
           if (sort != null && sort.trim().isNotEmpty) 'sort': sort.trim(),
           if (genreId != null && genreId.trim().isNotEmpty) 'genreId': genreId.trim(),
@@ -170,6 +172,7 @@ class OrderRepository {
     required String userId,
     String? q,
     String? sort,
+    String? status,
   }) async {
     final page = await getPurchasedBooks(
       userId: userId,
@@ -177,6 +180,7 @@ class OrderRepository {
       sort: sort,
       page: 0,
       size: 999,
+      status: status ?? 'RECEIVED',
     );
     return page.content;
   }
