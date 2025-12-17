@@ -229,21 +229,28 @@ class _ReceivedOrderCard extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: Column(
               children: [
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Expanded(
-                      child: Center(
-                        child: Text('Xem thêm >>', style: TextStyle(color: Colors.white70)),
+                    Center(
+                      child: GestureDetector(
+                        onTap: () => context.push('/orders/detail/${order.orderId}'),
+                        child: const Text('Xem thêm >>', style: TextStyle(color: Colors.white70)),
                       ),
                     ),
-                    Row(
-                      children: [
-                        const Text('Tổng: ', style: TextStyle(color: Colors.white70)),
-                        Text(
-                          _fmtVnd(order.totalPrice),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-                        ),
-                      ],
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Tổng: ', style: TextStyle(color: Colors.white70)),
+                          Text(
+                            _fmtVnd(order.totalPrice),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

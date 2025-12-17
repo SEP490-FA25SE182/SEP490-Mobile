@@ -294,10 +294,10 @@ class _ReturnPageState extends ConsumerState<ReturnPage> {
       // 1) Upload ảnh
       final gsUrl = await _uploadImageToGs(order.orderId);
 
-      // 2) Cập nhật Order: status = 6 (RETURNED), reason + imageUrl
+      // 2) Cập nhật Order: status = 7 (RETURNED), reason + imageUrl
       await ref.read(orderRepoProvider).update(
         order.orderId,
-        status: 6,
+        status: 7,
         reason: reasonText,
         imageUrl: gsUrl,
       );
