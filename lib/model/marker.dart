@@ -13,6 +13,11 @@ class MarkerModel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  final String? userId;
+  final String? bookId;
+  final String? tagFamily; // e.g. tag36h11
+  final int? tagId;        // AprilTag numeric id
+
   const MarkerModel({
     required this.markerId,
     required this.markerCode,
@@ -23,12 +28,24 @@ class MarkerModel {
     required this.isActived,
     this.createdAt,
     this.updatedAt,
+
+    this.userId,
+    this.bookId,
+    this.tagFamily,
+    this.tagId,
   });
 
   factory MarkerModel.fromJson(Map<String, dynamic> j) {
     double _double(dynamic v) {
       if (v is num) return v.toDouble();
       return double.tryParse(v?.toString() ?? '0') ?? 0;
+    }
+
+    int? _int(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return int.tryParse(v.toString());
     }
 
     return MarkerModel(
@@ -41,6 +58,10 @@ class MarkerModel {
       isActived: (j['isActived'] ?? '').toString(),
       createdAt: parseInstant(j['createdAt']),
       updatedAt: parseInstant(j['updatedAt']),
+      userId: j['userId']?.toString(),
+      bookId: j['bookId']?.toString(),
+      tagFamily: j['tagFamily']?.toString(),
+      tagId: _int(j['tagId']),
     );
   }
 
@@ -54,5 +75,9 @@ class MarkerModel {
     'isActived': isActived,
     if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
     if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+    if (userId != null) 'userId': userId,
+    if (bookId != null) 'bookId': bookId,
+    if (tagFamily != null) 'tagFamily': tagFamily,
+    if (tagId != null) 'tagId': tagId,
   };
 }

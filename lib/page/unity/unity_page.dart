@@ -12,14 +12,16 @@ const MethodChannel _unityBridgeChannel = MethodChannel('flutter_unity_bridge');
 
 class UnityPage extends ConsumerStatefulWidget {
   final String mode; // 'marker' hoặc 'quiz'
-  final String markerId;
+  final String bookId;
+  final String family;
   final String quizId;
   final String backendBase;
 
   const UnityPage({
     super.key,
     required this.mode,
-    required this.markerId,
+    required this.bookId,
+    required this.family,
     required this.quizId,
     required this.backendBase,
   });
@@ -27,6 +29,7 @@ class UnityPage extends ConsumerStatefulWidget {
   @override
   ConsumerState<UnityPage> createState() => _UnityPageState();
 }
+
 
 class _UnityPageState extends ConsumerState<UnityPage> {
   bool _sceneReady = false;
@@ -56,7 +59,7 @@ class _UnityPageState extends ConsumerState<UnityPage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.mode == 'marker') {
-        _sendMarkerToUnity();
+        _sendBookToUnity();
       } else if (widget.mode == 'quiz') {
         _sendQuizToUnity();
       }
@@ -69,20 +72,21 @@ class _UnityPageState extends ConsumerState<UnityPage> {
     super.dispose();
   }
 
-  // ============ GỬI MARKER ============
-  void _sendMarkerToUnity() {
-    if (widget.markerId.isEmpty) return;
+  // ============ GỬI BOOK ============
+  void _sendBookToUnity() {
+    if (widget.bookId.isEmpty) return;
 
     final payload = jsonEncode({
-      'markerId': widget.markerId,
+      'bookId': widget.bookId,
+      'family': widget.family,         // optional; Unity có thể ignore
       'backendBase': widget.backendBase,
     });
 
-    debugPrint('[Flutter] -> Unity (marker): $payload');
+    debugPrint('[Flutter] -> Unity (book): $payload');
 
     sendToUnity(
       'FlutterBridge',
-      'SetMarkerJson',
+      'SetBookJson',
       payload,
     );
   }
@@ -169,20 +173,7 @@ class _UnityPageState extends ConsumerState<UnityPage> {
       setState(() => _sceneReady = true);
     }
   }
-
-  /// Xử lý khi Unity gửi JSON submit quiz
-  ///
-  /// Kỳ vọng JSON từ Unity:
-  /// {
-  ///   "type": "quiz_submit",
-  ///   "quizId": "...",
-  ///   "answers": [
-  ///     {
-  ///       "questionId": "...",
-  ///       "answerIds": ["...", "..."]
-  ///     }
-  ///   ]
-  /// }
+  
   Future<void> _handleQuizSubmit(Map<String, dynamic> msg) async {
     // 1) quizId: ưu tiên cái Unity gửi, fallback quiz đang mở
     final quizId = (msg['quizId'] ?? widget.quizId).toString();
@@ -260,7 +251,7 @@ class _UnityPageState extends ConsumerState<UnityPage> {
   Widget build(BuildContext context) {
     final titleCode = widget.mode == 'quiz'
         ? 'Quiz AR (${widget.quizId})'
-        : (widget.markerId.isEmpty ? '(no id)' : widget.markerId);
+        : (widget.bookId.isEmpty ? '(no bookId)' : 'book=${widget.bookId}');
 
     return Scaffold(
       appBar: AppBar(
@@ -272,8 +263,9 @@ class _UnityPageState extends ConsumerState<UnityPage> {
             onPressed: _sceneReady
                 ? () {
               if (widget.mode == 'marker') {
-                _sendMarkerToUnity();
-              } else if (widget.mode == 'quiz') {
+                _sendBookToUnity();
+              }
+              else if (widget.mode == 'quiz') {
                 _sendQuizToUnity();
               }
             }
