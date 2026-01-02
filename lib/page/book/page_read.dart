@@ -112,10 +112,11 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
 
   void _toggleControls() => setState(() => _showControls = !_showControls);
 
-  // AR Dialog
+  // AR Dialog (dùng bookId)
   Future<void> _showArDialogForPage(PageModel page) async {
     try {
       final marker = await _markerRepo.findFirstByPageId(page.pageId);
+
       if (!mounted) return;
 
       if (marker == null) {
@@ -125,18 +126,33 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
         return;
       }
 
+      final family = (marker.tagFamily != null && marker.tagFamily!.trim().isNotEmpty)
+          ? marker.tagFamily!.trim()
+          : 'tag36h11';
+
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
           title: const Text('Trải nghiệm AR'),
           content: const Text('Bắt đầu trải nghiệm thực tế tăng cường nào!'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
             TextButton(
               onPressed: () {
                 ref.read(audioPlayerProvider).pause();
                 Navigator.pop(context);
-                context.go('/unity?mode=marker&markerId=${marker.markerId}');
+
+                context.goNamed(
+                  'unity',
+                  queryParameters: {
+                    'mode': 'marker',
+                    'bookId': widget.bookId,
+                    'family': family,
+                  },
+                );
               },
               child: const Text('Mở AR'),
             ),
@@ -144,7 +160,10 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi AR: $e')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi AR: $e')),
+      );
     }
   }
 

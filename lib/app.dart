@@ -146,14 +146,16 @@ GoRouter buildRouter() => GoRouter(
       path: '/unity',
       name: 'unity',
       builder: (ctx, st) {
-        final mode      = st.uri.queryParameters['mode'] ?? 'marker';
-        final markerId  = st.uri.queryParameters['markerId'] ?? '';
-        final quizId    = st.uri.queryParameters['quizId'] ?? '';
+        final mode        = st.uri.queryParameters['mode'] ?? 'marker';
+        final bookId      = st.uri.queryParameters['bookId'] ?? '';
+        final family      = st.uri.queryParameters['family'] ?? 'tag36h11';
+        final quizId      = st.uri.queryParameters['quizId'] ?? '';
         final backendBase = appConfig.unityBackendBase;
 
         return UnityPage(
           mode: mode,
-          markerId: markerId,
+          bookId: bookId,
+          family: family,
           quizId: quizId,
           backendBase: backendBase,
         );
