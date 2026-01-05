@@ -115,20 +115,9 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
   // AR Dialog (dùng bookId)
   Future<void> _showArDialogForPage(PageModel page) async {
     try {
-      final marker = await _markerRepo.findFirstByPageId(page.pageId);
-
       if (!mounted) return;
 
-      if (marker == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không tìm thấy marker cho trang này')),
-        );
-        return;
-      }
-
-      final family = (marker.tagFamily != null && marker.tagFamily!.trim().isNotEmpty)
-          ? marker.tagFamily!.trim()
-          : 'tag36h11';
+      const family = 'tagStandard41h12';
 
       showDialog(
         context: context,
@@ -166,6 +155,7 @@ class _PageReadPageState extends ConsumerState<PageReadPage> {
       );
     }
   }
+
 
   // Text Page
   Widget _buildTextPage(PageModel page) {
