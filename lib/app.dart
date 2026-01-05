@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sep490_mobile/page/notification/notification_page.dart';
 import 'package:sep490_mobile/page/order/order_received_page.dart';
 import 'package:sep490_mobile/page/unity/quiz_page.dart';
 import 'package:sep490_mobile/page/unity/quiz_result_detail_page.dart';
